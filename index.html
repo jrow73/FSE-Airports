@@ -2,187 +2,179 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FSE Airports Map</title>
 
-  <!-- Leaflet Core -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- Leaflet.glify (WebGL accelerated points) -->
+  <!-- Leaflet.glify -->
   <script src="https://unpkg.com/leaflet.glify@3.0.0/dist/leaflet.glify.min.js"></script>
 
+  <!-- Choices.js for enhanced dropdowns -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-    }
-    #map {
-      width: 100%;
-      height: 100%;
-    }
-    .leaflet-popup-content {
+    html, body { margin: 0; padding: 0; height: 100%; width: 100%; }
+    #map { width: 100%; height: 100%; }
+
+    /* Filter panel styling */
+    #filter-panel {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      font-family: sans-serif;
       font-size: 13px;
-      line-height: 1.4em;
+      width: 250px;
     }
+
+    #filter-panel label { font-weight: bold; display: block; margin-top: 6px; }
+    #filter-panel input {
+      width: 100%;
+      margin: 3px 0;
+      padding: 3px;
+      font-size: 13px;
+    }
+
+    #filter-panel button {
+      margin-top: 8px;
+      width: 100%;
+      padding: 6px;
+      background: #2ca02c;
+      border: none;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    #filter-panel button:hover { background: #1e7b1e; }
+
+    .leaflet-popup-content { font-size: 13px; line-height: 1.4em; }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
-  <script>
-  // Initialize map
-  const map = L.map('map').setView([20, 0], 2);
+  <!-- Collapsible Filter Box -->
+  <div id="filter-toggle">☰ Filters</div>
+  <div id="filter-box">
+    <h3>Filter Airports</h3>
 
-  // OSM tiles
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19
-  }).addTo(map);
+    <label>Type:</label>
+    <select id="typeFilter" multiple>
+      <option value="civil">Civil</option>
+      <option value="water">Water</option>
+      <option value="military">Military</option>
+    </select>
 
-  // Color by type
-  const typeColor = {
-    civil: '#2ca02c',    // green
-    water: '#1f77b4',    // blue
-    military: '#d62728'  // red
-  };
+    <label>Size:</label>
+    <select id="sizeFilter" multiple>
+      <option value="small">Small</option>
+      <option value="medium">Medium</option>
+      <option value="large">Large</option>
+    </select>
 
-  function getRadius(size) {
-    const s = Number(size) || 0;
-    if (s < 1000) return 3;
-    if (s < 3500) return 6;
-    return 9;
-  }
+    <label>Surface:</label>
+    <select id="surfaceFilter" multiple></select>
 
-  async function loadAndRender() {
-    const geojsonUrl = 'https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson';
-    try {
-      console.log('Fetching GeoJSON from', geojsonUrl);
-      const resp = await fetch(geojsonUrl);
-      if (!resp.ok) throw new Error(`GeoJSON fetch failed: ${resp.status} ${resp.statusText}`);
-      const geojson = await resp.json();
-      console.log('GeoJSON loaded, features:', (geojson.features || []).length);
+    <label>Runway Length (ft):</label>
+    <div style="display:flex; gap:4px;">
+      <input type="number" id="minRunway" placeholder="Min" />
+      <input type="number" id="maxRunway" placeholder="Max" />
+    </div>
 
-      // Remove any previous layers/popups
-      map.eachLayer(layer => {
-        // keep the tile layer(s), remove any non-tile added layers
-        if (layer instanceof L.TileLayer) return;
-        map.removeLayer(layer);
-      });
+    <div class="buttons">
+      <button id="applyFilters">Apply Filters</button>
+      <button id="resetFilters">Reset</button>
+    </div>
+  </div>
 
-      // Try to use Leaflet.glify if available
-      if (window.L && L.glify && typeof L.glify.points === 'function') {
-        console.log('Leaflet.glify detected — using WebGL renderer.');
-
-        // build glify data entries (only include ones with valid geometry)
-        const points = geojson.features
-          .filter(f => f && f.geometry && f.geometry.type === 'Point' && f.geometry.coordinates && f.geometry.coordinates.length >= 2)
-          .map(f => {
-            const coords = f.geometry.coordinates;
-            const props = f.properties || {};
-            return {
-              lat: Number(coords[1]),
-              lng: Number(coords[0]),
-              type: (props.type || '').toLowerCase(),
-              sizeVal: Number(props.size) || 0,
-              props: props
-            };
-          });
-
-        // Use glify to draw points
-        L.glify.points({
-          map,
-          data: points,
-          color: function(p) {
-            return typeColor[p.type] || '#888';
-          },
-          size: function(p) {
-            // glify expects a number for size (pixels)
-            const s = p.sizeVal;
-            return s < 1000 ? 5 : s < 3500 ? 8 : 12;
-          },
-          opacity: 0.85,
-          border: true,
-          borderColor: '#111',
-          borderWidth: 0.5,
-          click: function(e, point) {
-            // point is the data object we returned in the map above
-            const props = point.props || {};
-            const popupHtml = `
-              <strong>${props.name || 'Unknown'}</strong><br/>
-              ${props.city || ''}${props.state ? ', ' + props.state : ''}<br/>
-              ${props.country ? props.country + '<br/>' : ''}
-              Type: ${props.type || ''}<br/>
-              Size: ${props.size || ''}<br/>
-              Elev: ${props.elev ? props.elev + ' ft<br/>' : ''}
-              Runway: ${props.longestRwy ? props.longestRwy + ' ft<br/>' : ''}
-              Surface: ${props.surfaceType || ''}<br/>
-              Services: ${props.services || ''}
-            `;
-            L.popup()
-              .setLatLng([point.lat, point.lng])
-              .setContent(popupHtml)
-              .openOn(map);
-          }
-        });
-
-        return; // done with glify path
-      }
-
-      // If we got here, glify is not available — fallback to Canvas markers
-      console.warn('Leaflet.glify not available — falling back to Canvas-rendered markers (slower than WebGL).');
-      renderWithCanvas(geojson);
-
-    } catch (err) {
-      console.error('Error loading GeoJSON:', err);
-      alert('Error loading data — check console for details.');
+  <style>
+    #filter-toggle {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      padding: 6px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      z-index: 1001;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
-  }
 
-  // Canvas fallback using L.geoJSON with renderer L.canvas()
-  function renderWithCanvas(geojson) {
-    L.geoJSON(geojson, {
-      renderer: L.canvas(),
-      pointToLayer: function(feature, latlng) {
-        const props = feature.properties || {};
-        const color = typeColor[(props.type || '').toLowerCase()] || '#888';
-        const circle = L.circleMarker(latlng, {
-          radius: getRadius(props.size),
-          fillColor: color,
-          color: '#000',
-          weight: 0.4,
-          fillOpacity: 0.8
-        });
+    #filter-box {
+      position: absolute;
+      top: 50px;
+      left: 10px;
+      width: 240px;
+      background: white;
+      padding: 12px;
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      font-family: sans-serif;
+      font-size: 13px;
+      z-index: 1000;
+      max-height: 80%;
+      overflow-y: auto;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
 
-        const popupHtml = `
-          <strong>${props.name || 'Unknown'}</strong><br/>
-          ${props.city || ''}${props.state ? ', ' + props.state : ''}<br/>
-          ${props.country ? props.country + '<br/>' : ''}
-          Type: ${props.type || ''}<br/>
-          Size: ${props.size || ''}<br/>
-          Elev: ${props.elev ? props.elev + ' ft<br/>' : ''}
-          Runway: ${props.longestRwy ? props.longestRwy + ' ft<br/>' : ''}
-          Surface: ${props.surfaceType || ''}<br/>
-          Services: ${props.services || ''}
-        `;
-        circle.bindPopup(popupHtml);
-        return circle;
-      }
-    }).addTo(map);
-  }
+    #filter-box.hidden {
+      transform: translateX(-260px);
+      opacity: 0;
+      pointer-events: none;
+    }
 
-  // Kick off load
-  loadAndRender();
+    #filter-box h3 {
+      margin-top: 0;
+      text-align: center;
+    }
 
-  // Helpful tip: if you see no points, open DevTools -> Network and check that:
-  // 1) the leaflet.glify script loaded (200) and 2) the geojson raw URL fetched (200).
-  // Console logs above will help determine which path was used.
-</script>
+    select, input {
+      width: 100%;
+      margin-bottom: 6px;
+    }
 
-  
+    .buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .buttons button {
+      flex: 1;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 0;
+      font-weight: bold;
+      color: white;
+    }
+
+    #applyFilters { background-color: #007bff; }
+    #resetFilters { background-color: #6c757d; }
+  </style>
+
+  <script>
+    // Collapse / expand behavior
+    const filterBox = document.getElementById('filter-box');
+    const toggleBtn = document.getElementById('filter-toggle');
+    toggleBtn.addEventListener('click', () => {
+      filterBox.classList.toggle('hidden');
+    });
+
+    // TODO: your map + data loading logic remains the same as before
+    //       (keep everything after this block from your working version)
+  </script>
 </body>
+
 </html>
