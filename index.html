@@ -5,97 +5,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FSE Airports Map</title>
 
-  <!-- MapLibre GL JS -->
-  <link href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css" rel="stylesheet" />
-  <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
+  <!-- Leaflet CSS & JS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
     html, body { margin: 0; padding: 0; height: 100%; width: 100%; }
-    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    .maplibregl-popup-content { font-size: 13px; line-height: 1.4em; }
+    #map { width: 100%; height: 100%; }
+    .leaflet-popup-content { font-size: 13px; line-height: 1.4em; }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
   <script>
-    const map = new maplibregl.Map({
-      container: 'map',
-      style: 'https://demotiles.maplibre.org/style.json', // free OSM style
-      center: [0, 20],
-      zoom: 2
-    });
+    // Initialize map
+    const map = L.map('map').setView([20, 0], 2);
 
-    map.on('load', async () => {
-      // Load your GeoJSON file
-      const response = await fetch('https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson');
-      const geojson = await response.json();
+    // Add OSM tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+    }).addTo(map);
 
-      map.addSource('airports', { type: 'geojson', data: geojson });
+    // Load GeoJSON
+    fetch('https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson')
+      .then(res => res.json())
+      .then(geojson => {
 
-      // List all 9 icon files
-      const iconDefs = [
-        ['civil-small', 'https://jrow73.github.io/FSE-Airports/icons/civil-small.svg'],
-        ['civil-medium', 'https://jrow73.github.io/FSE-Airports/icons/civil-medium.svg'],
-        ['civil-large', 'https://jrow73.github.io/FSE-Airports/icons/civil-large.svg'],
-        ['water-small', 'https://jrow73.github.io/FSE-Airports/icons/water-small.svg'],
-        ['water-medium', 'https://jrow73.github.io/FSE-Airports/icons/water-medium.svg'],
-        ['water-large', 'https://jrow73.github.io/FSE-Airports/icons/water-large.svg'],
-        ['military-small', 'https://jrow73.github.io/FSE-Airports/icons/military-small.svg'],
-        ['military-medium', 'https://jrow73.github.io/FSE-Airports/icons/military-medium.svg'],
-        ['military-large', 'https://jrow73.github.io/FSE-Airports/icons/military-large.svg']
-      ];
+        // Create GeoJSON layer with Canvas renderer for performance
+        L.geoJSON(geojson, {
+          renderer: L.canvas(),
+          pointToLayer: function(feature, latlng) {
+            // Determine size category
+            let size;
+            const s = feature.properties.size;
+            if (s < 1000) size = 'small';
+            else if (s < 3500) size = 'medium';
+            else size = 'large';
 
-      // Load icons
-      for (const [name, url] of iconDefs) {
-        const img = new Image(32,32);
-        img.src = url;
-        await img.decode();
-        map.addImage(name, img);
-      }
+            // Build icon URL based on type+size
+            const iconUrl = `https://jrow73.github.io/FSE-Airports/icons/${feature.properties.type}-${size}.svg`;
 
-      // Symbol layer with custom icons
-      map.addLayer({
-        id: 'airport-icons',
-        type: 'symbol',
-        source: 'airports',
-        layout: {
-          'icon-image': [
-            'concat',
-            ['get', 'type'], '-',
-            [
-              'case',
-              ['<', ['get', 'size'], 1000], 'small',
-              ['<', ['get', 'size'], 3500], 'medium',
-              'large'
-            ]
-          ],
-          'icon-size': 0.4,
-          'icon-allow-overlap': true
-        }
-      });
+            const icon = L.icon({
+              iconUrl: iconUrl,
+              iconSize: [20,20], // adjust as needed
+              iconAnchor: [10,10], // center anchor
+              popupAnchor: [0, -10]
+            });
 
-      // Popups
-      map.on('click', 'airport-icons', e => {
-        const props = e.features[0].properties;
-        const coords = e.features[0].geometry.coordinates.slice();
-
-        const popupHtml = `
-          <strong>${props.name || 'Unknown'}</strong><br/>
-          ${props.city || ''}, ${props.state || ''}<br/>
-          Type: ${props.type}<br/>
-          Size: ${props.size}<br/>
-          Elev: ${props.elev} ft<br/>
-          Runway: ${props.longestRwy} ft<br/>
-          Surface: ${props.surfaceType}<br/>
-          Services: ${props.services}
-        `;
-        new maplibregl.Popup().setLngLat(coords).setHTML(popupHtml).addTo(map);
-      });
-
-      map.on('mouseenter', 'airport-icons', () => { map.getCanvas().style.cursor = 'pointer'; });
-      map.on('mouseleave', 'airport-icons', () => { map.getCanvas().style.cursor = ''; });
-    });
-  </script>
-</body>
-</html>
+            return L.marker(latlng, {icon: icon});
+          },
+          onEachFeature: function(feature, layer) {
+            const props = feature.properties;
+            const html = `
+              <strong>${props.name || 'Unknown'}</strong><br/>
+              ${props.city || ''}, ${props.state || ''}<br/>
+              Type: ${props.type}<br/>
+              Size: ${props.size}<br/>
+              Elev: ${props.elev} ft<br/>
+              Runway: ${props.longestRwy} ft<br/>
+              Surface: ${props.surfaceType}<br/>
+              Services: ${props.services}
+            `;
+            layer.bindPopup(ht
