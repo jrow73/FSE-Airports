@@ -20,6 +20,7 @@
     html, body { margin: 0; padding: 0; height: 100%; width: 100%; }
     #map { width: 100%; height: 100%; z-index: 1; }
 
+    /* Toggle button */
     #filter-toggle {
       position: absolute;
       top: 10px;
@@ -34,6 +35,7 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.2);
     }
 
+    /* Filter box */
     #filter-box {
       position: absolute;
       top: 50px;
@@ -49,32 +51,32 @@
       max-height: 80%;
       overflow-y: auto;
       transition: transform 0.25s ease, opacity 0.25s ease;
-      display: flex;
-      gap: 4px;
     }
 
     #filter-box.hidden {
-      transform: translateX(-280px);
+      transform: translateX(280px); /* slide off to the right */
       opacity: 0;
       pointer-events: none;
     }
 
-    #filter-box h3 {
-      margin-top: 0;
-      text-align: center;
-    }
+    #filter-box h3 { margin-top: 0; text-align: center; }
 
-    #filter-box .runway-inputs input {
-      flex: 1;       /* each takes equal space */
-      max-width: 100px; /* optional: prevent overly wide inputs */
+    /* Runway inputs side-by-side */
+    .runway-inputs {
+      display: flex;
+      gap: 4px;
+    }
+    .runway-inputs input {
+      flex: 1;
+      max-width: 100px;
     }
 
     .buttons {
       display: flex;
       justify-content: space-between;
       gap: 8px;
+      margin-top: 8px;
     }
-
     .buttons button {
       flex: 1;
       cursor: pointer;
@@ -84,7 +86,6 @@
       font-weight: bold;
       color: white;
     }
-
     #applyFilters { background-color: #007bff; }
     #resetFilters { background-color: #6c757d; }
 
