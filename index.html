@@ -1,70 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FSE Airports Map</title>
 
-  <!-- ✅ MapLibre GL JS (Open-source Mapbox alternative) -->
-  <link
-    href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css"
-    rel="stylesheet"
-  />
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css" rel="stylesheet" />
   <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
 
   <style>
     html, body { margin: 0; padding: 0; height: 100%; width: 100%; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    .maplibregl-popup-content {
-      font-size: 13px;
-      line-height: 1.4em;
-    }
+    .maplibregl-popup-content { font-size: 13px; line-height: 1.4em; }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
   <script>
-    // Initialize the map using MapLibre (no token required)
     const map = new maplibregl.Map({
       container: 'map',
       style: 'https://demotiles.maplibre.org/style.json', // free OSM style
-      center: [0, 20], // [lng, lat]
+      center: [0, 20],
       zoom: 2
     });
 
-    // Once the map loads, add your airport layer
     map.on('load', async () => {
-      // Replace with your actual raw GitHub URL to the GeoJSON file
+      // Load your GeoJSON file
       const response = await fetch('https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson');
       const geojson = await response.json();
 
-      map.addSource('airports', {
-        type: 'geojson',
-        data: geojson
-      });
+      map.addSource('airports', { type: 'geojson', data: geojson });
 
-      // Add a layer of circles (WebGL accelerated)
+      // List all 9 icon files
+      const iconDefs = [
+        ['civil-small', 'https://jrow73.github.io/FSE-Airports/icons/civil-small.svg'],
+        ['civil-medium', 'https://jrow73.github.io/FSE-Airports/icons/civil-medium.svg'],
+        ['civil-large', 'https://jrow73.github.io/FSE-Airports/icons/civil-large.svg'],
+        ['water-small', 'https://jrow73.github.io/FSE-Airports/icons/water-small.svg'],
+        ['water-medium', 'https://jrow73.github.io/FSE-Airports/icons/water-medium.svg'],
+        ['water-large', 'https://jrow73.github.io/FSE-Airports/icons/water-large.svg'],
+        ['military-small', 'https://jrow73.github.io/FSE-Airports/icons/military-small.svg'],
+        ['military-medium', 'https://jrow73.github.io/FSE-Airports/icons/military-medium.svg'],
+        ['military-large', 'https://jrow73.github.io/FSE-Airports/icons/military-large.svg']
+      ];
+
+      // Load icons
+      for (const [name, url] of iconDefs) {
+        const img = new Image(32,32);
+        img.src = url;
+        await img.decode();
+        map.addImage(name, img);
+      }
+
+      // Symbol layer with custom icons
       map.addLayer({
-        id: 'airport-points',
-        type: 'circle',
+        id: 'airport-icons',
+        type: 'symbol',
         source: 'airports',
-        paint: {
-          'circle-radius': 4,
-          'circle-color': [
-            'match',
-            ['get', 'type'],
-            'civil', '#2ecc71',
-            'water', '#3498db',
-            'military', '#e74c3c',
-            '#bdc3c7' // fallback
+        layout: {
+          'icon-image': [
+            'concat',
+            ['get', 'type'], '-',
+            [
+              'case',
+              ['<', ['get', 'size'], 1000], 'small',
+              ['<', ['get', 'size'], 3500], 'medium',
+              'large'
+            ]
           ],
-          'circle-opacity': 0.8
+          'icon-size': 0.75,
+          'icon-allow-overlap': true
         }
       });
 
-      // Add popup interaction
-      map.on('click', 'airport-points', e => {
+      // Popups
+      map.on('click', 'airport-icons', e => {
         const props = e.features[0].properties;
         const coords = e.features[0].geometry.coordinates.slice();
 
@@ -78,20 +90,11 @@
           Surface: ${props.surfaceType}<br/>
           Services: ${props.services}
         `;
-
-        new maplibregl.Popup()
-          .setLngLat(coords)
-          .setHTML(popupHtml)
-          .addTo(map);
+        new maplibregl.Popup().setLngLat(coords).setHTML(popupHtml).addTo(map);
       });
 
-      // Cursor style for interactivity
-      map.on('mouseenter', 'airport-points', () => {
-        map.getCanvas().style.cursor = 'pointer';
-      });
-      map.on('mouseleave', 'airport-points', () => {
-        map.getCanvas().style.cursor = '';
-      });
+      map.on('mouseenter', 'airport-icons', () => { map.getCanvas().style.cursor = 'pointer'; });
+      map.on('mouseleave', 'airport-icons', () => { map.getCanvas().style.cursor = ''; });
     });
   </script>
 </body>
