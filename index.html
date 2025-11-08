@@ -1,95 +1,97 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Worldwide Airports Map</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FSE Airports Map</title>
 
-  <!-- Mapbox GL CSS -->
-  <link href="https://api.mapbox.com/mapbox-gl-js/v2.22.0/mapbox-gl.css" rel="stylesheet" />
+  <!-- ✅ MapLibre GL JS (Open-source Mapbox alternative) -->
+  <link
+    href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css"
+    rel="stylesheet"
+  />
+  <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
+
   <style>
-    body, html { margin:0; padding:0; height:100%; }
-    #map { width:100%; height:100vh; }
-    .mapboxgl-popup { max-width: 300px; font-size:14px; }
+    html, body { margin: 0; padding: 0; height: 100%; width: 100%; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    .maplibregl-popup-content {
+      font-size: 13px;
+      line-height: 1.4em;
+    }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
-  <!-- Mapbox GL JS -->
-  <script src="https://api.mapbox.com/mapbox-gl-js/v2.22.0/mapbox-gl.js"></script>
   <script>
-    // === CONFIG ===
-    mapboxgl.accessToken = 'YOUR_MAPBOX_TOKEN';
-    const dataUrl = 'https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson';
-
-    // Initialize map
-    const map = new mapboxgl.Map({
+    // Initialize the map using MapLibre (no token required)
+    const map = new maplibregl.Map({
       container: 'map',
-      style: 'mapbox://styles/mapbox/light-v11',
-      center: [0, 20],
+      style: 'https://demotiles.maplibre.org/style.json', // free OSM style
+      center: [0, 20], // [lng, lat]
       zoom: 2
     });
 
-    map.on('load', () => {
-      fetch(dataUrl)
-        .then(res => res.json())
-        .then(data => {
-          // Add airports as a GeoJSON source
-          map.addSource('airports', {
-            type: 'geojson',
-            data: data
-          });
+    // Once the map loads, add your airport layer
+    map.on('load', async () => {
+      // Replace with your actual raw GitHub URL to the GeoJSON file
+      const response = await fetch('https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson');
+      const geojson = await response.json();
 
-          // Add a circle layer for points
-          map.addLayer({
-            id: 'airports-points',
-            type: 'circle',
-            source: 'airports',
-            paint: {
-              'circle-radius': [
-                'case',
-                ['<', ['get', 'size'], 1000], 4,
-                ['<', ['get', 'size'], 3500], 6,
-                8
-              ],
-              'circle-color': [
-                'match',
-                ['get', 'type'],
-                'civil', 'green',
-                'water', 'blue',
-                'military', 'red',
-                'gray'
-              ],
-              'circle-stroke-color': 'black',
-              'circle-stroke-width': 0.5,
-              'circle-opacity': 0.8
-            }
-          });
+      map.addSource('airports', {
+        type: 'geojson',
+        data: geojson
+      });
 
-          // Add popup on click
-          map.on('click', 'airports-points', (e) => {
-            const props = e.features[0].properties;
-            const popup = new mapboxgl.Popup()
-              .setLngLat(e.lngLat)
-              .setHTML(`
-                <b>${props.name}</b><br>
-                ${props.city}, ${props.state}<br>
-                ${props.country}<br>
-                Type: ${props.type}<br>
-                Size: ${props.size}<br>
-                Elev: ${props.elev} ft<br>
-                Surface: ${props.surfaceType}<br>
-                Longest RWY: ${props.longestRwy}<br>
-                Services: ${props.services}
-              `)
-              .addTo(map);
-          });
+      // Add a layer of circles (WebGL accelerated)
+      map.addLayer({
+        id: 'airport-points',
+        type: 'circle',
+        source: 'airports',
+        paint: {
+          'circle-radius': 4,
+          'circle-color': [
+            'match',
+            ['get', 'type'],
+            'civil', '#2ecc71',
+            'water', '#3498db',
+            'military', '#e74c3c',
+            '#bdc3c7' // fallback
+          ],
+          'circle-opacity': 0.8
+        }
+      });
 
-          // Change cursor to pointer when hovering
-          map.on('mouseenter', 'airports-points', () => map.getCanvas().style.cursor = 'pointer');
-          map.on('mouseleave', 'airports-points', () => map.getCanvas().style.cursor = '');
-        });
+      // Add popup interaction
+      map.on('click', 'airport-points', e => {
+        const props = e.features[0].properties;
+        const coords = e.features[0].geometry.coordinates.slice();
+
+        const popupHtml = `
+          <strong>${props.name || 'Unknown'}</strong><br/>
+          ${props.city || ''}, ${props.state || ''}<br/>
+          Type: ${props.type}<br/>
+          Size: ${props.size}<br/>
+          Elev: ${props.elev} ft<br/>
+          Runway: ${props.longestRwy} ft<br/>
+          Surface: ${props.surfaceType}<br/>
+          Services: ${props.services}
+        `;
+
+        new maplibregl.Popup()
+          .setLngLat(coords)
+          .setHTML(popupHtml)
+          .addTo(map);
+      });
+
+      // Cursor style for interactivity
+      map.on('mouseenter', 'airport-points', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'airport-points', () => {
+        map.getCanvas().style.cursor = '';
+      });
     });
   </script>
 </body>
