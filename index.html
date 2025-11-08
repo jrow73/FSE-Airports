@@ -23,7 +23,7 @@
     #filter-toggle {
       position: absolute;
       top: 10px;
-      left: 10px;
+      right: 10px;
       background: #fff;
       border: 1px solid #ccc;
       padding: 6px 10px;
@@ -37,7 +37,7 @@
     #filter-box {
       position: absolute;
       top: 50px;
-      left: 10px;
+      right: 10px;
       width: 260px;
       background: white;
       padding: 12px;
@@ -49,6 +49,8 @@
       max-height: 80%;
       overflow-y: auto;
       transition: transform 0.25s ease, opacity 0.25s ease;
+      display: flex;
+      gap: 4px;
     }
 
     #filter-box.hidden {
@@ -60,6 +62,11 @@
     #filter-box h3 {
       margin-top: 0;
       text-align: center;
+    }
+
+    #filter-box .runway-inputs input {
+      flex: 1;       /* each takes equal space */
+      max-width: 100px; /* optional: prevent overly wide inputs */
     }
 
     .buttons {
@@ -111,7 +118,7 @@
     <select id="surfaceFilter" multiple></select>
 
     <label>Runway Length (ft):</label>
-    <div style="display:flex; gap:4px;">
+    <div class="runway-inputs">
       <input type="number" id="minRunway" placeholder="Min" />
       <input type="number" id="maxRunway" placeholder="Max" />
     </div>
