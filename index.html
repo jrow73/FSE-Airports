@@ -3,13 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FSE Airports Map</title>
+  <title>FSE Airports Map (Canvas)</title>
 
   <!-- Leaflet CSS & JS -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
@@ -19,61 +16,66 @@
   </style>
 </head>
 <body>
-  <div id="map"></div>
+<div id="map"></div>
 
-  <script>
-    // Initialize map
-    const map = L.map('map').setView([20, 0], 2);
+<script>
+  // Initialize map
+  const map = L.map('map').setView([20,0], 2);
 
-    // Add OSM tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-    }).addTo(map);
+  // OSM tiles
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19
+  }).addTo(map);
 
-    // Load GeoJSON
-    fetch('https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson')
-      .then(res => res.json())
-      .then(geojson => {
+  // Color mapping for type
+  const typeColor = {
+    civil: '#2ca02c',    // green
+    water: '#1f77b4',    // blue
+    military: '#d62728'  // red
+  };
 
-        // Create GeoJSON layer with Canvas renderer for performance
-        L.geoJSON(geojson, {
-          renderer: L.canvas(),
-          pointToLayer: function(feature, latlng) {
-            // Determine size category
-            let size;
-            const s = feature.properties.size;
-            if (s < 1000) size = 'small';
-            else if (s < 3500) size = 'medium';
-            else size = 'large';
+  // Radius mapping for size
+  function getRadius(size) {
+    if (size < 1000) return 3;
+    if (size < 3500) return 6;
+    return 9;
+  }
 
-            // Build icon URL based on type+size
-            const iconUrl = `https://jrow73.github.io/FSE-Airports/icons/${feature.properties.type}-${size}.svg`;
+  // Load GeoJSON
+  fetch('https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson')
+    .then(res => res.json())
+    .then(geojson => {
 
-            const icon = L.icon({
-              iconUrl: iconUrl,
-              iconSize: [20,20], // adjust as needed
-              iconAnchor: [10,10], // center anchor
-              popupAnchor: [0, -10]
-            });
+      L.geoJSON(geojson, {
+        renderer: L.canvas(), // Canvas rendering
+        pointToLayer: function(feature, latlng) {
+          // Circle marker based on type + size
+          const circle = L.circleMarker(latlng, {
+            radius: getRadius(feature.properties.size),
+            fillColor: typeColor[feature.properties.type] || '#888',
+            color: '#000',
+            weight: 0.5,
+            fillOpacity: 0.8
+          });
 
-            return L.marker(latlng, {icon: icon});
-          },
-          onEachFeature: function(feature, layer) {
-            const props = feature.properties;
-            const html = `
-              <strong>${props.name || 'Unknown'}</strong><br/>
-              ${props.city || ''}, ${props.state || ''}<br/>
-              Type: ${props.type}<br/>
-              Size: ${props.size}<br/>
-              Elev: ${props.elev} ft<br/>
-              Runway: ${props.longestRwy} ft<br/>
-              Surface: ${props.surfaceType}<br/>
-              Services: ${props.services}
-            `;
-            layer.bindPopup(html);
-          }
-        }).addTo(map);
-      });
-  </script>
+          // Popups
+          const props = feature.properties;
+          const popupHtml = `
+            <strong>${props.name || 'Unknown'}</strong><br/>
+            ${props.city || ''}, ${props.state || ''}<br/>
+            Type: ${props.type}<br/>
+            Size: ${props.size}<br/>
+            Elev: ${props.elev} ft<br/>
+            Runway: ${props.longestRwy} ft<br/>
+            Surface: ${props.surfaceType}<br/>
+            Services: ${props.services}
+          `;
+          circle.bindPopup(popupHtml);
+
+          return circle;
+        }
+      }).addTo(map);
+    });
+</script>
 </body>
 </html>
