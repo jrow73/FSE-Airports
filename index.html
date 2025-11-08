@@ -1,81 +1,105 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FSE Airports Map (Canvas)</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FSE Airports Map</title>
 
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <!-- Leaflet Core -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Leaflet.glify (WebGL accelerated points) -->
+  <script src="https://unpkg.com/leaflet.glify@3.0.0/dist/leaflet.glify.min.js"></script>
+
   <style>
-    html, body { margin: 0; padding: 0; height: 100%; width: 100%; }
-    #map { width: 100%; height: 100%; }
-    .leaflet-popup-content { font-size: 13px; line-height: 1.4em; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    .leaflet-popup-content {
+      font-size: 13px;
+      line-height: 1.4em;
+    }
   </style>
 </head>
 <body>
-<div id="map"></div>
+  <div id="map"></div>
 
-<script>
-  // Initialize map
-  const map = L.map('map').setView([20,0], 2);
+  <script>
+    // Initialize map
+    const map = L.map('map').setView([20, 0], 2);
 
-  // OSM tiles
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19
-  }).addTo(map);
+    // OSM tiles
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19
+    }).addTo(map);
 
-  // Color mapping for type
-  const typeColor = {
-    civil: '#2ca02c',    // green
-    water: '#1f77b4',    // blue
-    military: '#d62728'  // red
-  };
+    // Color by type
+    const typeColor = {
+      civil: '#2ca02c',    // green
+      water: '#1f77b4',    // blue
+      military: '#d62728'  // red
+    };
 
-  // Radius mapping for size
-  function getRadius(size) {
-    if (size < 1000) return 3;
-    if (size < 3500) return 6;
-    return 9;
-  }
+    // Size → radius
+    function getRadius(size) {
+      if (size < 1000) return 3;
+      if (size < 3500) return 6;
+      return 9;
+    }
 
-  // Load GeoJSON
-  fetch('https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson')
-    .then(res => res.json())
-    .then(geojson => {
+    // Load GeoJSON
+    fetch('https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson')
+      .then(res => res.json())
+      .then(geojson => {
+        const points = geojson.features.map(f => {
+          const { lat, lon, type, size, name, city, state, elev, longestRwy, surfaceType, services } = f.properties;
+          return {
+            lat: parseFloat(f.geometry.coordinates[1]),
+            lng: parseFloat(f.geometry.coordinates[0]),
+            color: typeColor[type] || '#888',
+            size: getRadius(size),
+            props: { name, city, state, type, size, elev, longestRwy, surfaceType, services }
+          };
+        });
 
-      L.geoJSON(geojson, {
-        renderer: L.canvas(), // Canvas rendering
-        pointToLayer: function(feature, latlng) {
-          // Circle marker based on type + size
-          const circle = L.circleMarker(latlng, {
-            radius: getRadius(feature.properties.size),
-            fillColor: typeColor[feature.properties.type] || '#888',
-            color: '#000',
-            weight: 0.5,
-            fillOpacity: 0.8
-          });
-
-          // Popups
-          const props = feature.properties;
-          const popupHtml = `
-            <strong>${props.name || 'Unknown'}</strong><br/>
-            ${props.city || ''}, ${props.state || ''}<br/>
-            Type: ${props.type}<br/>
-            Size: ${props.size}<br/>
-            Elev: ${props.elev} ft<br/>
-            Runway: ${props.longestRwy} ft<br/>
-            Surface: ${props.surfaceType}<br/>
-            Services: ${props.services}
-          `;
-          circle.bindPopup(popupHtml);
-
-          return circle;
-        }
-      }).addTo(map);
-    });
-</script>
+        // Use Leaflet.glify for fast WebGL rendering
+        L.glify.points({
+          map,
+          data: points,
+          color: p => p.color,
+          size: p => p.size,
+          opacity: 0.85,
+          click: (e, point) => {
+            const p = point.props;
+            const popupHtml = `
+              <strong>${p.name || 'Unknown'}</strong><br/>
+              ${p.city || ''}, ${p.state || ''}<br/>
+              Type: ${p.type}<br/>
+              Size: ${p.size}<br/>
+              Elev: ${p.elev} ft<br/>
+              Runway: ${p.longestRwy} ft<br/>
+              Surface: ${p.surfaceType}<br/>
+              Services: ${p.services}
+            `;
+            L.popup()
+              .setLatLng([point.lat, point.lng])
+              .setContent(popupHtml)
+              .openOn(map);
+          }
+        });
+      })
+      .catch(err => console.error('Error loading GeoJSON:', err));
+  </script>
 </body>
 </html>
