@@ -5,140 +5,92 @@
   <title>Worldwide Airports Map</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-
+  <!-- Mapbox GL CSS -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.22.0/mapbox-gl.css" rel="stylesheet" />
   <style>
     body, html { margin:0; padding:0; height:100%; }
     #map { width:100%; height:100vh; }
-
-    /* Legend styles */
-    .legend {
-      background: white;
-      padding: 10px;
-      line-height: 1.5em;
-      font-size: 14px;
-      box-shadow: 0 0 6px rgba(0,0,0,0.3);
-      border-radius: 6px;
-    }
-    .legend div {
-      display:flex;
-      align-items:center;
-    }
-    .legend span {
-      display:inline-block;
-      width:12px; height:12px;
-      margin-right:6px;
-      opacity:0.8;
-    }
+    .mapboxgl-popup { max-width: 300px; font-size:14px; }
   </style>
 </head>
 <body>
   <div id="map"></div>
 
-  <!-- Leaflet JS -->
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-
+  <!-- Mapbox GL JS -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.22.0/mapbox-gl.js"></script>
   <script>
-    let map;
-    let markersLayer = L.layerGroup();
-    let allData = [];
+    // === CONFIG ===
+    mapboxgl.accessToken = 'YOUR_MAPBOX_TOKEN';
+    const dataUrl = 'https://raw.githubusercontent.com/jrow73/FSE-Airports/main/airports.geojson';
 
-    function initMap() {
-      map = L.map('map').setView([20,0], 2);
+    // Initialize map
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/light-v11',
+      center: [0, 20],
+      zoom: 2
+    });
 
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
-      }).addTo(map);
-
-      markersLayer.addTo(map);
-      addLegend();
-      loadData();
-    }
-
-    // Fetch airports JSON from GitHub
-    function loadData() {
-      const dataUrl = 'https://raw.githubusercontent.com/jrow73/FSE-Airports/refs/heads/main/airports.json';
-
+    map.on('load', () => {
       fetch(dataUrl)
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-          return res.json();
-        })
+        .then(res => res.json())
         .then(data => {
-          console.log('Fetched data:', data.slice(0,5));
-          allData = data;
-          renderMarkers(allData);
-        })
-        .catch(err => console.error('Error fetching JSON data:', err));
-    }
+          // Add airports as a GeoJSON source
+          map.addSource('airports', {
+            type: 'geojson',
+            data: data
+          });
 
-    function renderMarkers(data) {
-      markersLayer.clearLayers();
-      data.forEach(a => {
-        if (!a.lat || !a.lon) return;
+          // Add a circle layer for points
+          map.addLayer({
+            id: 'airports-points',
+            type: 'circle',
+            source: 'airports',
+            paint: {
+              'circle-radius': [
+                'case',
+                ['<', ['get', 'size'], 1000], 4,
+                ['<', ['get', 'size'], 3500], 6,
+                8
+              ],
+              'circle-color': [
+                'match',
+                ['get', 'type'],
+                'civil', 'green',
+                'water', 'blue',
+                'military', 'red',
+                'gray'
+              ],
+              'circle-stroke-color': 'black',
+              'circle-stroke-width': 0.5,
+              'circle-opacity': 0.8
+            }
+          });
 
-        const type = (a.type || '').toLowerCase();
-        const size = Number(a.size || 0);
+          // Add popup on click
+          map.on('click', 'airports-points', (e) => {
+            const props = e.features[0].properties;
+            const popup = new mapboxgl.Popup()
+              .setLngLat(e.lngLat)
+              .setHTML(`
+                <b>${props.name}</b><br>
+                ${props.city}, ${props.state}<br>
+                ${props.country}<br>
+                Type: ${props.type}<br>
+                Size: ${props.size}<br>
+                Elev: ${props.elev} ft<br>
+                Surface: ${props.surfaceType}<br>
+                Longest RWY: ${props.longestRwy}<br>
+                Services: ${props.services}
+              `)
+              .addTo(map);
+          });
 
-        // Marker colors
-        const color = type==='military' ? 'red' :
-                      type==='water' ? 'blue' : 'green';
-        // Marker shapes
-        const shape = size >= 3500 ? 'star' :
-                      size >= 1000 ? 'square' : 'circle';
-
-        const icon = L.divIcon({
-          html: `<div style="
-                  background:${color};
-                  width:${shape==='star'?16:10}px;
-                  height:${shape==='star'?16:10}px;
-                  border-radius:${shape==='circle'?'50%':'0'};
-                  transform:${shape==='star'?'rotate(45deg)':''};
-                  opacity:0.8;">
-                 </div>`,
-          iconSize: [10,10],
-          className: ''
+          // Change cursor to pointer when hovering
+          map.on('mouseenter', 'airports-points', () => map.getCanvas().style.cursor = 'pointer');
+          map.on('mouseleave', 'airports-points', () => map.getCanvas().style.cursor = '');
         });
-
-        const popup = `
-          <b>${a.name || ''}</b><br>
-          ${a.city || ''}, ${a.state || ''}<br>
-          ${a.country || ''}<br>
-          Type: ${a.type || ''}<br>
-          Size: ${a.size || ''}<br>
-          Elev: ${a.elev || ''} ft<br>
-          Surface: ${a.surfaceType || ''}<br>
-          Longest RWY: ${a.longestRwy || ''}<br>
-          Services: ${a.services || ''}
-        `;
-
-        L.marker([a.lat, a.lon], {icon}).bindPopup(popup).addTo(markersLayer);
-      });
-    }
-
-    function addLegend() {
-      const legend = L.control({position: 'bottomright'});
-
-      legend.onAdd = function() {
-        const div = L.DomUtil.create('div', 'legend');
-        div.innerHTML += '<b>Type & Size</b><br>';
-        const types = {civil:'green', water:'blue', military:'red'};
-        const sizes = ['small','medium','large'];
-        for (const t in types) {
-          for (const s of sizes) {
-            const shape = s==='large' ? '★' : s==='medium' ? '■' : '●';
-            div.innerHTML += `<div><span style="background:${types[t]};">${shape}</span>${t} ${s}</div>`;
-          }
-        }
-        return div;
-      };
-
-      legend.addTo(map);
-    }
-
-    document.addEventListener('DOMContentLoaded', initMap);
+    });
   </script>
 </body>
 </html>
