@@ -181,13 +181,11 @@
           fillOpacity: 0.8
         });
         circle.bindPopup(`
-          <strong>${p.name || 'Unknown'}</strong><br/>
-          ${p.icao ? `ICAO: ${p.icao}<br/>` : ''}
-          ${p.city ? `${p.city}, ${p.state || ''}<br/>` : ''}
-          Type: ${p.type}<br/>
-          Size: ${p.size}<br/>
+          <strong>${p.icao ? `${p.icao}<br/>` : ''}
+          ${p.name || 'Unknown'}<br/>
+          ${p.city ? `${p.city}, ${p.state || ''}${p.country ? `, ${p.country}</strong><br/>` : ''}
           Elev: ${p.elev} ft<br/>
-          Runway: ${p.longestRwy} ft<br/>
+          Longest Runway: ${p.longestRwy}ft of 
           Surface: ${p.surfaceType}<br/>
           Services: ${p.services}
         `);
