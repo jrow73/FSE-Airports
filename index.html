@@ -183,7 +183,7 @@
         circle.bindPopup(`
           <strong>${p.icao ? `${p.icao}<br/>` : ''}
           ${p.name || 'Unknown'}<br/>
-          ${p.city ? `${p.city}, ${p.state || ''}${p.country ? `, ${p.country}</strong><br/>` : ''}
+          ${p.city ? `${p.city}, ${p.state || ''}, ${p.country}</strong><br/>` : ''}
           Elev: ${p.elev} ft<br/>
           Longest Runway: ${p.longestRwy}ft of 
           Surface: ${p.surfaceType}<br/>
