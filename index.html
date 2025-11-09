@@ -90,6 +90,49 @@
     #resetFilters { background-color: #6c757d; }
 
     .leaflet-popup-content { font-size: 13px; line-height: 1.4em; }
+
+    /* Search toggle button */
+  #search-toggle {
+    position: absolute;
+    top: 10px;
+    right: 90px; /* offset from filter toggle */
+    background: #fff;
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    z-index: 1001;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+
+  /* Search box */
+  #search-box {
+    position: absolute;
+    top: 50px;
+    right: 90px;
+    width: 260px;
+    background: white;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    font-family: sans-serif;
+    font-size: 13px;
+    z-index: 1000;
+    max-height: 80%;
+    overflow-y: auto;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+  #search-box.hidden {
+    transform: translateX(280px);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  #search-box h3 { margin-top: 0; text-align: center; }
+  #search-box input { width: 100%; margin-bottom: 6px; padding: 4px; }
+  #search-box button { width: 100%; padding: 6px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; }
+  #search-box button:hover { background: #1e7b32; }
   </style>
 </head>
 
@@ -129,6 +172,22 @@
       <button id="resetFilters">Reset</button>
     </div>
   </div>
+
+  <div id="search-toggle">🔍 Search</div>
+<div id="search-box" class="hidden">
+  <h3>Search Airports</h3>
+
+  <label>ICAO:</label>
+  <input type="text" id="icaoSearch" placeholder="e.g., KJFK" />
+
+  <label>City:</label>
+  <input type="text" id="citySearch" placeholder="e.g., New York" />
+
+  <label>Lat, Lon:</label>
+  <input type="text" id="latlonSearch" placeholder="e.g., 40.7128,-74.0060" />
+
+  <button id="goSearch">Go</button>
+</div>
 
   <script>
     // Toggle filter panel
@@ -224,6 +283,63 @@
         });
       })
       .catch(err => console.error('Error loading GeoJSON:', err));
+
+  // Toggle search panel
+  const searchBox = document.getElementById('search-box');
+  const searchToggle = document.getElementById('search-toggle');
+  searchToggle.addEventListener('click', () => searchBox.classList.toggle('hidden'));
+
+  // Go button logic
+  document.getElementById('goSearch').addEventListener('click', () => {
+    const icaoVal = document.getElementById('icaoSearch').value.trim().toLowerCase();
+    const cityVal = document.getElementById('citySearch').value.trim().toLowerCase();
+    const latlonVal = document.getElementById('latlonSearch').value.trim();
+
+    let targetLatLng = null;
+
+    // 1️⃣ Search by ICAO or City
+    if ((icaoVal || cityVal) && typeof allFeatures !== 'undefined') {
+      const found = allFeatures.find(f => {
+        const p = f.properties;
+        const matchesICAO = icaoVal && p.icao?.toLowerCase() === icaoVal;
+        const matchesCity = cityVal && p.city?.toLowerCase().includes(cityVal);
+        return matchesICAO || matchesCity;
+      });
+      if (found) {
+        targetLatLng = [found.geometry.coordinates[1], found.geometry.coordinates[0]];
+      }
+    }
+
+    // 2️⃣ Search by Lat,Lon input
+    if (!targetLatLng && latlonVal) {
+      const parts = latlonVal.split(',');
+      if (parts.length === 2) {
+        const lat = parseFloat(parts[0]);
+        const lon = parseFloat(parts[1]);
+        if (!isNaN(lat) && !isNaN(lon)) {
+          targetLatLng = [lat, lon];
+        }
+      }
+    }
+
+    if (targetLatLng) {
+      map.setView(targetLatLng, 10); // Zoom in to found location
+      // Optionally open popup if matching feature
+      const feature = allFeatures?.find(f =>
+        f.geometry.coordinates[1] === targetLatLng[0] &&
+        f.geometry.coordinates[0] === targetLatLng[1]
+      );
+      if (feature) {
+        L.popup()
+          .setLatLng(targetLatLng)
+          .setContent(`<strong>${feature.properties.name}</strong><br/>${feature.properties.city || ''}`)
+          .openOn(map);
+      }
+    } else {
+      alert('No matching location found.');
+    }
+  });
+    
   </script>
 </body>
 </html>
