@@ -18,92 +18,116 @@
     
       <div class="top-center">
         <div class="search-wrap">
-            <input
+          <input
             id="searchInput"
             class="search"
             type="search"
-            placeholder="Search ICAO, name, city, country… lat/lon (Press Enter)"
+            placeholder="Search ICAO, Airport Name, City, or lat/lon (Press Enter)"
             autocomplete="off"
-            />
-
+          />
         </div>
       </div>
 
       <div class="top-right">
         <button id="filtersBtn" class="menu-btn" aria-expanded="false">Filters ▾</button>
+        <button id="distanceBtn" class="menu-btn" aria-expanded="false">Distance ▾</button>
       </div>
+
     </header>
 
     <!-- Slide-down filters panel -->
     <section id="filtersPanel" class="panel" aria-hidden="true">
       <div class="panel-inner">
-        <div class="grid">
-          <div class="field">
+        <div class="grid filters-grid">
+
+          <!-- Big left column: Country -->
+          <div class="field field-tall">
             <label for="countrySelect">Country</label>
-            <select id="countrySelect">
+            <select id="countrySelect" multiple size="20">
               <option value="">All</option>
             </select>
           </div>
 
-          <div class="field">
+          <!-- Big column: State -->
+          <div class="field field-tall">
+            <label for="stateSelect">State / Region</label>
+            <select id="stateSelect" multiple size="20">
+              <option value="">All</option>
+            </select>
+          </div>
+
+          <!-- Middle column: Runway + Surface + Radius -->
+          <div class="field field-compact">
+            <label>Runway (ft)</label>
+            <div class="inline-group">
+              <input
+                id="rwyMin"
+                type="number"
+                inputmode="numeric"
+                min="0"
+                step="500"
+                placeholder="Min"
+              />
+              <span class="inline-separator">/</span>
+              <input
+                id="rwyMax"
+                type="number"
+                inputmode="numeric"
+                min="0"
+                step="500"
+                placeholder="Max"
+              />
+            </div>
+
+            <label for="surfaceSelect" class="stack-label">Surface Type</label>
+            <select id="surfaceSelect" multiple size="14">
+              <option value="">All</option>
+            </select>
+
+            <label class="inline-label" for="radiusCenter">Radius center / (nm)</label>
+            <div class="inline-group">
+              <input
+                id="radiusCenter"
+                type="text"
+                autocomplete="off"
+                placeholder="ICAO or lat/lon"
+              />
+              <input
+                id="radiusNm"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                step="10"
+                placeholder="nm"
+              />
+            </div>
+          </div>
+
+          <!-- Right side: smaller stacked filters -->
+          <div class="field field-compact">
             <label for="typeSelect">Type</label>
-            <select id="typeSelect">
+            <select id="typeSelect" multiple size="4">
               <option value="">All</option>
               <option value="civil">Civil</option>
               <option value="military">Military</option>
               <option value="water">Water</option>
             </select>
-          </div>
 
-          <div class="field">
-            <label for="sizeSelect">Size</label>
-            <select id="sizeSelect">
+            <label for="sizeSelect" class="stack-label">Size</label>
+            <select id="sizeSelect" multiple size="4">
               <option value="">All</option>
               <option value="small">Small</option>
               <option value="medium">Medium</option>
               <option value="large">Large</option>
             </select>
-          </div>
 
-          <div class="field">
-            <label for="surfaceSelect">Surface Type</label>
-            <select id="surfaceSelect">
-              <option value="">All</option>
-            </select>
-          </div>
-
-          <div class="field">
-            <label for="servicesSelect">Services</label>
-            <select id="servicesSelect">
+            <label for="servicesSelect" class="stack-label">Services</label>
+            <select id="servicesSelect" multiple size="4">
               <option value="">Any</option>
               <option value="0">0</option>
               <option value="3">3</option>
               <option value="7">7</option>
             </select>
-          </div>
-
-          <div class="field">
-            <label for="rwyMin">Runway Min (ft)</label>
-            <input
-              id="rwyMin"
-              type="number"
-              inputmode="numeric"
-              min="0"
-              step="500"
-              placeholder="0"
-            />
-          </div>
-
-          <div class="field">
-            <label for="rwyMax">Runway Max (ft)</label>
-            <input
-              id="rwyMax"
-              type="number"
-              inputmode="numeric"
-              min="0"
-              step="500"
-              placeholder="15000"
-            />
           </div>
         </div>
 
@@ -118,20 +142,62 @@
     </section>
 
 
+    <!-- Distance panel -->
+    <section id="distancePanel" class="panel" aria-hidden="true">
+      <div class="panel-inner">
+        <div class="grid">
+          <div class="field">
+            <label for="distFrom">From ICAO</label>
+            <input
+              id="distFrom"
+              type="text"
+              maxlength="32"
+              autocomplete="off"
+              placeholder="ICAO or lat lon"
+            />
+          </div>
+
+          <div class="field">
+            <label for="distTo">To ICAO</label>
+            <input
+              id="distTo"
+              type="text"
+              maxlength="32"
+              autocomplete="off"
+              placeholder="ICAO or lat lon"
+            />
+          </div>
+        </div>
+
+        <div class="panel-actions">
+          <div id="distanceResult" class="count"></div>
+          <div class="panel-buttons">
+            <button id="distanceGo">Compute</button>
+            <button id="distanceSwap" class="ghost">Swap</button>
+            <button id="distanceClear" class="ghost">Clear</button>
+            <button id="distanceClose">Close</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Map fills the rest -->
     <main id="map"></main>
   </div>
 
-  <!-- Leaflet core (once) -->
+  <!-- Leaflet core -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
-  <!-- Leaflet.glify browser build (once) -->
+  <!-- Leaflet.glify browser build -->
   <script src="https://cdn.jsdelivr.net/npm/leaflet.glify@3.3.1/dist/glify-browser.js"></script>
 
-  <!-- Your app scripts -->
+  <!-- local app modules -->
   <script src="./js/map.js"></script>
   <script src="./js/gl-renderer.js"></script>
   <script src="./js/search.js"></script>
+  <script src="./js/geo-utils.js"></script>
+  <script src="./js/query-ui.js"></script>
+  <script src="./js/distance-tool.js"></script>
   <script src="./js/app.js"></script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 (function (global) {
   'use strict';
 
-  const GlRenderer = { layer: null, features: [], map: null };
+  const GlRenderer = { layer: null, features: [], map: null, highlightSet: null };
 
   // --- helpers ---------------------------------------------------------------
   function colorFromProps(p) {
@@ -59,7 +59,7 @@
     map.on('zoomend', rerender);
   };
 
-  GlRenderer.render = function render(features) {
+  GlRenderer.render = function render(features, highlighted) {
     if (!global.L || !L.glify) {
       console.error('Leaflet.glify not loaded; cannot render points.');
       return;
@@ -70,6 +70,16 @@
     }
 
     GlRenderer.features = Array.isArray(features) ? features : [];
+
+    // If a highlight list is provided, update the highlightSet.
+    // If it's undefined, keep the previous highlightSet (for zoom redraws).
+    if (highlighted === undefined) {
+      // keep existing highlightSet
+    } else if (!highlighted) {
+      GlRenderer.highlightSet = null;
+    } else {
+      GlRenderer.highlightSet = new Set(highlighted);
+    }
 
     if (GlRenderer.layer) { GlRenderer.layer.remove(); GlRenderer.layer = null; }
 
@@ -83,15 +93,33 @@
 
       // Accessors get (index, pointOrGeoJsonFeature)
       size: (i, pf) => {
-        const p = (pf && pf.properties) ? pf.properties
-               : (GlRenderer.features[i] && GlRenderer.features[i].properties) || {};
+        const feature = GlRenderer.features[i];
+        const p = (pf && pf.properties)
+          ? pf.properties
+          : (feature && feature.properties) || {};
         const z = GlRenderer.map ? GlRenderer.map.getZoom() : 0;
-        return sizeFromProps(p, z);
+
+        let size = sizeFromProps(p, z);
+
+        // Highlighted features: make them larger
+        if (GlRenderer.highlightSet && feature && GlRenderer.highlightSet.has(feature)) {
+          size = Math.round(size * 1.6); // tweak factor to taste
+        }
+
+        return size;
       },
 
       color: (i, pf) => {
-        const p = (pf && pf.properties) ? pf.properties
-                : (GlRenderer.features[i] && GlRenderer.features[i].properties) || {};
+        const feature = GlRenderer.features[i];
+        const p = (pf && pf.properties)
+          ? pf.properties
+          : (feature && feature.properties) || {};
+
+        // Highlighted features: bright yellow
+        if (GlRenderer.highlightSet && feature && GlRenderer.highlightSet.has(feature)) {
+          return { r: 1, g: 0.9, b: 0.1, a: 1 };
+        }
+
         return colorFromProps(p);
       },
 

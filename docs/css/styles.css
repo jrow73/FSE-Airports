@@ -170,6 +170,66 @@ button.ghost {
   color: #4b5563;
 }
 
+/* Filters layout tweaks */
+
+.filters-grid {
+  gap: 0.75rem;
+}
+
+/* Make tall multi-select columns a bit more prominent */
+.field-tall select {
+  width: 100%;
+}
+
+/* Ensure country/state lists are comfortably scrollable */
+#countrySelect,
+#stateSelect {
+  min-height: 260px;
+}
+
+/* Compact stacked column for runway/radius + right-side filters */
+.field-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.inline-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.inline-group input[type="number"],
+.inline-group input[type="text"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.inline-separator {
+  opacity: 0.6;
+}
+
+.inline-label {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.stack-label {
+  margin-top: 0.5rem;
+}
+
+/* Slightly smaller font for the compact column if you want it tighter */
+
+.field-compact label,
+.field-compact select,
+.field-compact input {
+  font-size: 0.9rem;
+}
+
+
+
 /* --- Popup UI --- */
 .leaflet-popup-content {
   margin: 0;
