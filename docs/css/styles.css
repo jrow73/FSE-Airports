@@ -1,5 +1,11 @@
 html,
-body,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden; /* prevent body scroll; map + panels handle their own */
+}
+
 #app {
   height: 100%;
   margin: 0;
@@ -72,7 +78,6 @@ body,
   color: #6b7280;
 }
 
-
 .menu-btn,
 button {
   padding: 8px 10px;
@@ -92,18 +97,22 @@ button:hover {
   display: none;
 }
 
-/* Slide-down filters panel */
+/* Slide-down panels */
 .panel {
-  position: absolute;
-  top: 50px; /* just below topbar */
+  position: fixed;
+  top: 50px;   /* sits below top bar */
   left: 0;
   right: 0;
-  transform: translateY(-8px);
+  bottom: 0;   /* anchor to bottom of viewport */
+  overflow-y: auto;  /* allow the panel itself to scroll */
   opacity: 0;
   pointer-events: none;
+  transform: translateY(-10px);
   transition: all 0.18s ease;
   z-index: 999;
+  background: var(--panel-bg); /* or whatever you currently use */
 }
+
 
 .panel.open {
   transform: translateY(0);
@@ -141,7 +150,8 @@ label {
 
 input[type='search'],
 select,
-input[type='number'] {
+input[type='number'],
+input[type='text'] {
   padding: 8px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
@@ -170,10 +180,63 @@ button.ghost {
   color: #4b5563;
 }
 
+.panel-count {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.copy-btn[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
 /* Filters layout tweaks */
+
+#filtersPanel {
+  position: absolute;
+  /* existing styles... */
+  z-index: 1200; /* higher than Leaflet controls */
+}
 
 .filters-grid {
   gap: 0.75rem;
+}
+
+.filter-section {
+  margin-bottom: 10px;
+}
+
+.filter-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+
+.filter-section-header span {
+  font-weight: 600;
+}
+
+.filter-section-header-icon {
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+
+.filter-section-body {
+  margin-top: 8px;
+}
+
+.filter-section.collapsed .filter-section-body {
+  display: none;
 }
 
 /* Make tall multi-select columns a bit more prominent */
@@ -181,7 +244,6 @@ button.ghost {
   width: 100%;
 }
 
-/* Ensure country/state lists are comfortably scrollable */
 #countrySelect,
 #stateSelect {
   min-height: 260px;
@@ -221,19 +283,16 @@ button.ghost {
 }
 
 /* Slightly smaller font for the compact column if you want it tighter */
-
 .field-compact label,
 .field-compact select,
 .field-compact input {
   font-size: 0.9rem;
 }
 
-
-
 /* --- Popup UI --- */
 .leaflet-popup-content {
   margin: 0;
-} /* remove default margins so our layout hits edges */
+}
 .leaflet-popup-content-wrapper {
   padding: 0;
   border-radius: 12px;

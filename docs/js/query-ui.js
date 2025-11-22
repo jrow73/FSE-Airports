@@ -20,17 +20,26 @@
     let coordMarker = null;
     let highlightLayer = null;
     let radiusCircle = null;
+    let activeFeatures = [];
 
     function setAllFeatures(features) {
       allFeatures = Array.isArray(features) ? features : [];
     }
 
     function updateCount(shown) {
-      if (!elements.count) return;
-      const n = shown;
       const total = allFeatures.length;
-      elements.count.textContent =
-        `${n.toLocaleString()} shown of ${total.toLocaleString()}`;
+
+      if (elements.count) {
+        const n = shown;
+        elements.count.textContent =
+          `${n.toLocaleString()} shown of ${total.toLocaleString()}`;
+      }
+
+      if (elements.copyIcaos) {
+        const btn = elements.copyIcaos;
+        const enable = shown > 0 && shown < total;
+        btn.disabled = !enable;
+      }
     }
 
     function zoomToCoords(lat, lon) {
@@ -57,7 +66,10 @@
         surfaceSel: selectedValues(elements.surface),
         servicesSel: selectedValues(elements.services),
         rwyMin: elements.rwyMin ? elements.rwyMin.value : '',
-        rwyMax: elements.rwyMax ? elements.rwyMax.value : ''
+        rwyMax: elements.rwyMax ? elements.rwyMax.value : '',
+        irlStatus: elements.irlStatus ? elements.irlStatus.value : 'any',
+        requireLocalFuel: elements.localFuel ? elements.localFuel.checked : false,
+        requireLocalMx: elements.localMx ? elements.localMx.checked : false
       };
 
       // Radius center & radius (nm)
@@ -190,6 +202,7 @@
       }
 
       const active = highlight && highlight.length ? highlight : base;
+      activeFeatures = active;
       updateCount(active.length);
       return active;
     }
@@ -210,7 +223,7 @@
 
       // State / region
       if (elements.state) {
-        const opts = Search.states();
+        const opts = Search.states ? Search.states() : [];
         const frag = document.createDocumentFragment();
         for (const s of opts) {
           const o = document.createElement('option');
@@ -316,6 +329,10 @@
     if (elements.size) elements.size.addEventListener('change', render);
     if (elements.surface) elements.surface.addEventListener('change', render);
     if (elements.services) elements.services.addEventListener('change', render);
+    if (elements.irlStatus) elements.irlStatus.addEventListener('change', render);
+    if (elements.localFuel) elements.localFuel.addEventListener('change', render);
+    if (elements.localMx) elements.localMx.addEventListener('change', render);
+
     if (elements.rwyMin) elements.rwyMin.addEventListener('input', debounce(render, 200));
     if (elements.rwyMax) elements.rwyMax.addEventListener('input', debounce(render, 200));
 
@@ -339,6 +356,9 @@
         if (elements.rwyMax) elements.rwyMax.value = '';
         if (elements.radiusCenter) elements.radiusCenter.value = '';
         if (elements.radiusNm) elements.radiusNm.value = '';
+        if (elements.irlStatus) elements.irlStatus.value = 'any';
+        if (elements.localFuel) elements.localFuel.checked = false;
+        if (elements.localMx) elements.localMx.checked = false;
         // Clear filters only; leave search as-is
         render();
       });
@@ -355,12 +375,107 @@
       elements.filtersBtn.setAttribute('aria-expanded', String(open));
     }
 
-    if (elements.filtersBtn) {
-      elements.filtersBtn.addEventListener('click', () => togglePanel());
+    // Filters toggle button
+    if (elements.filtersBtn && elements.filtersPanel) {
+      elements.filtersBtn.addEventListener('click', () => {
+        togglePanel();
+      });
     }
+
+    // "Show Map" / close button
     if (elements.close) {
-      elements.close.addEventListener('click', () => togglePanel(false));
+      elements.close.addEventListener('click', () => {
+        togglePanel(false);
+      });
     }
+
+    // Copy ICAO list of currently active airports
+    if (elements.copyIcaos) {
+      elements.copyIcaos.addEventListener('click', () => {
+        if (!activeFeatures || !activeFeatures.length) return;
+
+        const icaos = activeFeatures
+          .map(f => (f && f.properties && f.properties.icao)
+            ? String(f.properties.icao).toUpperCase()
+            : '')
+          .filter(Boolean);
+
+        const text = icaos.join(',');
+
+        if (!text) return;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).catch(err => {
+            console.error('Clipboard write failed:', err);
+          });
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.position = 'fixed';
+          ta.style.top = '-1000px';
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          try {
+            document.execCommand('copy');
+          } catch (err) {
+            console.error('document.execCommand copy failed:', err);
+          }
+          document.body.removeChild(ta);
+        }
+      });
+    }
+
+    // Ensure only one filter section is open at a time
+    function wireAccordion() {
+      if (!elements.filtersPanel) return;
+
+      const sections = Array.from(
+        elements.filtersPanel.querySelectorAll('.filter-section')
+      );
+      if (!sections.length) return;
+
+      // Start with all sections collapsed
+      sections.forEach(section => {
+        section.classList.add('collapsed');
+        const header = section.querySelector('.filter-section-header');
+        if (header) {
+          header.setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      sections.forEach(section => {
+        const header = section.querySelector('.filter-section-header');
+        const body = section.querySelector('.filter-section-body');
+        if (!header || !body) return;
+
+        header.addEventListener('click', () => {
+          const isOpen = !section.classList.contains('collapsed');
+
+          if (isOpen) {
+            // Clicking an open section closes it (now all will be closed)
+            section.classList.add('collapsed');
+            header.setAttribute('aria-expanded', 'false');
+          } else {
+            // Open this section, close all others
+            sections.forEach(other => {
+              if (other === section) return;
+              other.classList.add('collapsed');
+              const otherHeader = other.querySelector('.filter-section-header');
+              if (otherHeader) {
+                otherHeader.setAttribute('aria-expanded', 'false');
+              }
+            });
+
+            section.classList.remove('collapsed');
+            header.setAttribute('aria-expanded', 'true');
+          }
+        });
+      });
+    }
+
+    wireAccordion();
+
 
     return {
       setAllFeatures,

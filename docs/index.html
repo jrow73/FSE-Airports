@@ -15,7 +15,7 @@
         <span class="app-title">Airports</span>
         <span id="loading" class="loading hidden">Loading…</span>
       </div>
-    
+
       <div class="top-center">
         <div class="search-wrap">
           <input
@@ -35,111 +35,189 @@
 
     </header>
 
+   
     <!-- Slide-down filters panel -->
     <section id="filtersPanel" class="panel" aria-hidden="true">
       <div class="panel-inner">
-        <div class="grid filters-grid">
 
-          <!-- Big left column: Country -->
-          <div class="field field-tall">
-            <label for="countrySelect">Country</label>
-            <select id="countrySelect" multiple size="20">
-              <option value="">All</option>
-            </select>
-          </div>
+        <!-- Regional filters -->
+        <div class="filter-section">
+          <button
+            type="button"
+            class="filter-section-header"
+            aria-expanded="true"
+          >
+            <span>Regional filters</span>
+            <span class="filter-section-header-icon">▾</span>
+          </button>
+          <div class="filter-section-body">
+            <div class="grid filters-grid">
 
-          <!-- Big column: State -->
-          <div class="field field-tall">
-            <label for="stateSelect">State / Region</label>
-            <select id="stateSelect" multiple size="20">
-              <option value="">All</option>
-            </select>
-          </div>
+              <!-- Country -->
+              <div class="field field-tall">
+                <label for="countrySelect">Country</label>
+                <select id="countrySelect" multiple size="20">
+                  <option value="">All</option>
+                </select>
+              </div>
 
-          <!-- Middle column: Runway + Surface + Radius -->
-          <div class="field field-compact">
-            <label>Runway (ft)</label>
-            <div class="inline-group">
-              <input
-                id="rwyMin"
-                type="number"
-                inputmode="numeric"
-                min="0"
-                step="500"
-                placeholder="Min"
-              />
-              <span class="inline-separator">/</span>
-              <input
-                id="rwyMax"
-                type="number"
-                inputmode="numeric"
-                min="0"
-                step="500"
-                placeholder="Max"
-              />
-            </div>
+              <!-- State -->
+              <div class="field field-tall">
+                <label for="stateSelect">State</label>
+                <select id="stateSelect" multiple size="20">
+                  <option value="">All</option>
+                </select>
+              </div>
 
-            <label for="surfaceSelect" class="stack-label">Surface Type</label>
-            <select id="surfaceSelect" multiple size="14">
-              <option value="">All</option>
-            </select>
+              <!-- Radius -->
+              <div class="field field-compact">
+                <label class="inline-label" for="radiusCenter">Radius center / (nm)</label>
+                <div class="inline-group">
+                  <input
+                    id="radiusCenter"
+                    type="text"
+                    autocomplete="off"
+                    placeholder="ICAO or lat/lon"
+                  />
+                  <input
+                    id="radiusNm"
+                    type="number"
+                    inputmode="numeric"
+                    min="1"
+                    step="10"
+                    placeholder="nm"
+                  />
+                </div>
+              </div>
 
-            <label class="inline-label" for="radiusCenter">Radius center / (nm)</label>
-            <div class="inline-group">
-              <input
-                id="radiusCenter"
-                type="text"
-                autocomplete="off"
-                placeholder="ICAO or lat/lon"
-              />
-              <input
-                id="radiusNm"
-                type="number"
-                inputmode="numeric"
-                min="1"
-                step="10"
-                placeholder="nm"
-              />
             </div>
           </div>
+        </div>
 
-          <!-- Right side: smaller stacked filters -->
-          <div class="field field-compact">
-            <label for="typeSelect">Type</label>
-            <select id="typeSelect" multiple size="4">
-              <option value="">All</option>
-              <option value="civil">Civil</option>
-              <option value="military">Military</option>
-              <option value="water">Water</option>
-            </select>
+        <!-- Runway filters -->
+        <div class="filter-section">
+          <button
+            type="button"
+            class="filter-section-header"
+            aria-expanded="true"
+          >
+            <span>Runway filters</span>
+            <span class="filter-section-header-icon">▾</span>
+          </button>
+          <div class="filter-section-body">
+            <div class="grid filters-grid">
 
-            <label for="sizeSelect" class="stack-label">Size</label>
-            <select id="sizeSelect" multiple size="4">
-              <option value="">All</option>
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-            </select>
+              <!-- Runway length -->
+              <div class="field field-compact">
+                <label>Runway (ft)</label>
+                <div class="inline-group">
+                  <input
+                    id="rwyMin"
+                    type="number"
+                    inputmode="numeric"
+                    min="0"
+                    step="500"
+                    placeholder="Min"
+                  />
+                  <span class="inline-separator">/</span>
+                  <input
+                    id="rwyMax"
+                    type="number"
+                    inputmode="numeric"
+                    min="0"
+                    step="500"
+                    placeholder="Max"
+                  />
+                </div>
+              </div>
 
-            <label for="servicesSelect" class="stack-label">Services</label>
-            <select id="servicesSelect" multiple size="4">
-              <option value="">Any</option>
-              <option value="0">0</option>
-              <option value="3">3</option>
-              <option value="7">7</option>
-            </select>
+              <!-- Surface type -->
+              <div class="field field-compact">
+                <label for="surfaceSelect" class="stack-label">Surface Type</label>
+                <select id="surfaceSelect" multiple size="6">
+                  <option value="">All</option>
+                </select>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Airport features -->
+        <div class="filter-section">
+          <button
+            type="button"
+            class="filter-section-header"
+            aria-expanded="true"
+          >
+            <span>Airport features</span>
+            <span class="filter-section-header-icon">▾</span>
+          </button>
+          <div class="filter-section-body">
+            <div class="grid filters-grid">
+
+              <!-- Type -->
+              <div class="field field-compact">
+                <label for="typeSelect">Type</label>
+                <select id="typeSelect" multiple size="4">
+                  <option value="">All</option>
+                  <option value="civil">Civil</option>
+                  <option value="military">Military</option>
+                  <option value="water">Water</option>
+                </select>
+              </div>
+
+              <!-- Size -->
+              <div class="field field-compact">
+                <label for="sizeSelect" class="stack-label">Size</label>
+                <select id="sizeSelect" multiple size="4">
+                  <option value="">All</option>
+                  <option value="small">Small</option>
+                  <option value="medium">Medium</option>
+                  <option value="large">Large</option>
+                </select>
+              </div>
+
+              <!-- IRL / Local services -->
+              <div class="field field-compact">
+                <label for="irlStatus" class="stack-label">IRL airport</label>
+                <select id="irlStatus" multiple size="4">
+                  <option value="any">Any</option>
+                  <option value="correct">FSE ICAO = IRL ICAO</option>
+                  <option value="incorrect">FSE ICAO ≠ IRL ICAO</option>
+                  <option value="none">No IRL airport</option>
+                </select>
+
+                <label class="stack-label">Local services</label>
+                <div class="inline-group">
+                  <label class="inline">
+                    <input type="checkbox" id="localFuel" />
+                    Fuel
+                  </label>
+                  <label class="inline">
+                    <input type="checkbox" id="localMx" />
+                    Fuel & MX
+                  </label>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
 
         <div class="panel-actions">
-          <div id="count" class="count"></div>
+          <div class="panel-count">
+            <div id="count" class="count"></div>
+            <button id="copyIcaos" class="ghost copy-btn" disabled>Copy ICAOs</button>
+          </div>
           <div class="panel-buttons">
-            <button id="filtersClear" class="ghost">Clear</button>
-            <button id="filtersClose">Close</button>
+            <button id="filtersClear" class="ghost">Clear All</button>
+            <button id="filtersClose">Show Map</button>
           </div>
         </div>
       </div>
     </section>
+
 
 
     <!-- Distance panel -->

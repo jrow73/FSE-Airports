@@ -21,9 +21,13 @@
     services: document.getElementById('servicesSelect'),
     rwyMin: document.getElementById('rwyMin'),
     rwyMax: document.getElementById('rwyMax'),
+    irlStatus: document.getElementById('irlStatus'),
+    localFuel: document.getElementById('localFuel'),
+    localMx: document.getElementById('localMx'),
     radiusCenter: document.getElementById('radiusCenter'),
     radiusNm: document.getElementById('radiusNm'),
     clear: document.getElementById('filtersClear'),
+    copyIcaos: document.getElementById('copyIcaos'),
     close: document.getElementById('filtersClose'),
     count: document.getElementById('count'),
 
@@ -58,11 +62,15 @@
     rwyMax: el.rwyMax,
     radiusCenter: el.radiusCenter,
     radiusNm: el.radiusNm,
+    irlStatus: el.irlStatus,
+    localFuel: el.localFuel,
+    localMx: el.localMx,
     clear: el.clear,
     close: el.close,
     filtersBtn: el.filtersBtn,
     filtersPanel: el.filtersPanel,
-    count: el.count
+    count: el.count,
+    copyIcaos: el.copyIcaos
   });
 
   const distanceTool = DistanceTool.create(map, {

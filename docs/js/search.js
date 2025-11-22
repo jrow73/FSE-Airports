@@ -67,7 +67,10 @@
       rwyMax = '',
       radiusCenterLat = null,
       radiusCenterLon = null,
-      radiusNm = null
+      radiusNm = null,
+      irlStatus = 'any',
+      requireLocalFuel = false,
+      requireLocalMx = false
     } = opts;
 
     const qStr = q.trim().toLowerCase();
@@ -128,6 +131,10 @@
       const fSurf    = String(p.surfaceType ?? '').toLowerCase();
       const fServ    = String(p.services ?? '');
       const fRwy     = p.longestRwy != null ? Number(p.longestRwy) : null;
+      const hasReal = !!p.hasRealAirport;
+      const icaoCorrect = !!p.icaoCorrect;
+      const localFuelVal = String(p.localfuel || '').toLowerCase(); // "yes"/"no"
+      const localMxVal = String(p.localmx || '').toLowerCase();     // "yes"/"no"
 
       // Country: if any selected, feature's country must be in set
       if (countrySet.size && !countrySet.has(fCountry)) {
@@ -179,6 +186,29 @@
         const d = haversine(flat, flon, radiusCenterLat, radiusCenterLon);
         if (d > radiusNm) return false;
       }
+
+      // IRL / ICAO status filter
+      if (irlStatus && irlStatus !== 'any') {
+        if (irlStatus === 'correct') {
+          // Real airport and ICAOs match
+          if (!(hasReal && icaoCorrect)) return false;
+        } else if (irlStatus === 'incorrect') {
+          // Real airport but ICAOs differ
+          if (!(hasReal && !icaoCorrect)) return false;
+        } else if (irlStatus === 'none') {
+          // No real airport at that location
+          if (hasReal) return false;
+        }
+      }
+
+      // Local services
+      if (requireLocalFuel && localFuelVal !== 'yes') {
+        return false;
+      }
+      if (requireLocalMx && localMxVal !== 'yes') {
+        return false;
+      }
+
 
       // If we got here, this feature passes all filters
       return true;
