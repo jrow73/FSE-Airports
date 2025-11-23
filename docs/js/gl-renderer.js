@@ -17,26 +17,26 @@
     // Return {r,g,b,a} in 0..1
     if (t.includes('mil'))   return { r: 1.0, g: 0.15, b: 0.16, a: 1 }; // red
     if (t.includes('water')) return { r: 0.0, g: 0.78, b: 1.0, a: 1 }; // blue
-    return                    { r: 0.17, g: 0.63, b: 0.17, a: 1 };       // green (civil/default)
+    return                    { r: 0.4, g: 0.4, b: 0.4, a: 1 };       // green (civil/default)
   }
 
   function zoomScale(z) {
     // Gentle scaling by zoom level; tweak to taste
-    if (z <= 2)  return 0.25;   // very zoomed out
+    if (z <= 2)  return 0.3;   // very zoomed out
     if (z <= 4)  return 0.5;
-    if (z <= 7)  return 0.75;   // normal
-    if (z <= 10) return 1;
-    if (z <= 12) return 1.25;
-    return 2;                   // very zoomed in
+    if (z <= 7)  return 0.8;   // normal
+    if (z <= 10) return 1.2;
+    if (z <= 12) return 1.75;
+    return 3;                   // very zoomed in
   }
 
   // Unified marker size: all airports use the same base radius,
   // we only vary the shape (ring / dot / double-dot) by category.
   function sizeFromProps(p, z) {
-    const base = 15; // match your previous "large" icon
+    const base = 15; // base size at zoom level 10
     const k = zoomScale(z || 0);
     const sized = Math.round(base * k);
-    return Math.max(5, Math.min(30, sized));
+    return Math.max(5, Math.min(50, sized));
   }
 
   function debounce(fn, ms) {
@@ -271,7 +271,7 @@
         colorMode: 'type'
       });
       const smallInner = buildLayerFor(smallFeatures, {
-        sizeScale: 0.55,
+        sizeScale: 0.4,
         colorMode: 'white'
       });
       if (smallOuter) layers.push(smallOuter);
@@ -293,15 +293,15 @@
     //   - inner colored disc (scale 0.35)
     if (largeFeatures.length) {
       const largeOuter = buildLayerFor(largeFeatures, {
-        sizeScale: 1.0,   // was 1.1; now match others
+        sizeScale: 1.6,   // was 1.1; now match others
         colorMode: 'type'
       });
       const largeMid = buildLayerFor(largeFeatures, {
-        sizeScale: 0.7,
+        sizeScale: 1.2,
         colorMode: 'white'
       });
       const largeInner = buildLayerFor(largeFeatures, {
-        sizeScale: 0.35,
+        sizeScale: 0.5,
         colorMode: 'type'
       });
 
