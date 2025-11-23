@@ -129,21 +129,49 @@
         const p = feature.properties || {};
         const [lng, lat] = feature.geometry?.coordinates || [0, 0];
 
-        const icao = (p.icao || '').toUpperCase();
+        // --- ICAO / IRL logic -------------------------------------------------
+        const fseIcao = (p.icao || '').toUpperCase();
+        const irlIcao = p.irlicao ? String(p.irlicao).toUpperCase() : '';
+        const hasReal = !!p.hasRealAirport;
+        const icaoCorrect = !!p.icaoCorrect;
+
         const name = p.name || '';
         const place = [p.city, p.state, p.country].filter(Boolean).join(', ');
 
-        // Friendly text values
-        const elevText = Number.isFinite(p.elev) ? `${p.elev} ft` : '—';
-        const longestText = p.longestRwy ? `${Number(p.longestRwy).toLocaleString()} ft` : '—';
-        const surfaceText = (p.surfaceType ?? '—');
-        const servicesText =
-          (p.services === 1 || p.services === true) ? 'Yes' :
-          (p.services === 0 || p.services === false) ? 'No' :
-          (p.services ?? '—');
+        let icaoLine = fseIcao || '—';
 
-        const linkHtml = icao
-          ? `<a href="https://server.fseconomy.net/airport.jsp?icao=${encodeURIComponent(icao)}"
+        if (hasReal) {
+          // There *is* a real airport; only decorate if mismatched
+          if (!icaoCorrect && irlIcao && irlIcao !== fseIcao) {
+            icaoLine += ` <span class="icao-irl">(IRL=${irlIcao})</span>`;
+          }
+          // If correct or missing IRL ICAO, just show FSE ICAO
+        } else {
+          // No real airport at this location
+          icaoLine += ` <span class="icao-closed" title="IRL airport is closed">⨂</span>`;
+        }
+
+        // --- Local services: based on localfuel / localmx --------------------
+        const hasFuel = String(p.localfuel || '').toLowerCase() === 'yes';
+        const hasMx   = String(p.localmx || '').toLowerCase() === 'yes';
+
+        function formatLocalServices() {
+          if (!hasFuel && !hasMx) return 'None';
+          if (hasFuel && !hasMx) return 'Fuel';
+          return 'Fuel, Maintenance';
+        }
+
+        const servicesText = formatLocalServices();
+
+        // --- Other fields -----------------------------------------------------
+        const elevText = Number.isFinite(p.elev) ? `${p.elev} ft` : '—';
+        const longestText = p.longestRwy
+          ? `${Number(p.longestRwy).toLocaleString()} ft`
+          : '—';
+        const surfaceText = (p.surfaceType ?? '—');
+
+        const linkHtml = fseIcao
+          ? `<a href="https://server.fseconomy.net/airport.jsp?icao=${encodeURIComponent(fseIcao)}"
                target="_blank" rel="noopener"
                title="Open in FSEconomy (new tab)"
                aria-label="Open in FSEconomy">&#128279;</a>`
@@ -152,7 +180,7 @@
         const html = `
           <div class="ap-popup">
             <div class="ap-header">
-              <div class="ap-icao"><span>${icao || '—'}</span>${linkHtml}</div>
+              <div class="ap-icao"><span>${icaoLine}</span>${linkHtml}</div>
               <div class="ap-name">${name}</div>
               <div class="ap-place">${place}</div>
             </div>
@@ -168,6 +196,10 @@
               <div class="ap-row">
                 <div class="ap-label">Local Services</div>
                 <div class="ap-value">${servicesText}</div>
+              </div>
+              <div class="ap-row">
+                <div class="ap-label">Coordintes</div>
+                <div class="ap-value">${lat} ${lng}</div>
               </div>
             </div>
           </div>

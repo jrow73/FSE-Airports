@@ -332,6 +332,17 @@ button.ghost {
 .ap-icao a:hover {
   opacity: 1;
 }
+
+.ap-icao .icao-irl {
+  font-size: 0.9em;
+  opacity: 0.8;
+}
+
+.ap-icao .icao-closed {
+  font-size: 1.0em;
+  margin-left: 0.25rem;
+  color: #00fcfc;
+}
 .ap-name {
   font-weight: 600;
   font-size: 15px;
