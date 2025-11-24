@@ -22,18 +22,19 @@
 
   function zoomScale(z) {
     // Gentle scaling by zoom level; tweak to taste
-    if (z <= 2)  return 0.3;   // very zoomed out
-    if (z <= 4)  return 0.5;
-    if (z <= 7)  return 0.8;   // normal
-    if (z <= 10) return 1.2;
-    if (z <= 12) return 1.75;
-    return 3;                   // very zoomed in
+    if (z <= 2)  return 0.15;   // very zoomed out
+    if (z <= 4)  return 0.45;
+    if (z <= 6)  return 0.75;   // normal
+    if (z <= 8)  return 1.25;  
+    if (z <= 10) return 1.55;   // Pretty close
+    if (z <= 12) return 2.0;
+    return 2;                   // very zoomed in
   }
 
   // Unified marker size: all airports use the same base radius,
   // we only vary the shape (ring / dot / double-dot) by category.
   function sizeFromProps(p, z) {
-    const base = 15; // base size at zoom level 10
+    const base = 10; // base size at zoom level 10
     const k = zoomScale(z || 0);
     const sized = Math.round(base * k);
     return Math.max(5, Math.min(50, sized));
@@ -260,57 +261,58 @@
       }
     }
 
-    const layers = [];
+ const layers = [];
 
-    // SMALL: ring:
-    //   - outer colored disc (scale 1.0)
-    //   - inner white disc (scale ~0.55)
-    if (smallFeatures.length) {
-      const smallOuter = buildLayerFor(smallFeatures, {
-        sizeScale: 1.0,
-        colorMode: 'type'
-      });
-      const smallInner = buildLayerFor(smallFeatures, {
-        sizeScale: 0.4,
-        colorMode: 'white'
-      });
-      if (smallOuter) layers.push(smallOuter);
-      if (smallInner) layers.push(smallInner);
-    }
+// SMALL: solid disc (just one layer)
+if (smallFeatures.length) {
+  const smallLayer = buildLayerFor(smallFeatures, {
+    sizeScale: .75,
+    colorMode: 'type'
+  });
+  if (smallLayer) layers.push(smallLayer);
+}
 
-    // MEDIUM: solid disc (just one layer)
-    if (mediumFeatures.length) {
-      const mediumLayer = buildLayerFor(mediumFeatures, {
-        sizeScale: 1.0,
-        colorMode: 'type'
-      });
-      if (mediumLayer) layers.push(mediumLayer);
-    }
+// MEDIUM: single ring:
+//   - outer colored disc (scale 1.0)
+//   - inner white disc (scale ~0.7 — adjust to taste)
+if (mediumFeatures.length) {
+  const mediumOuter = buildLayerFor(mediumFeatures, {
+    sizeScale: 1.2,
+    colorMode: 'type'
+  });
+  const mediumInner = buildLayerFor(mediumFeatures, {
+    sizeScale: 0.5,   // this is your ring thickness control
+    colorMode: 'white'
+  });
+  if (mediumOuter) layers.push(mediumOuter);
+  if (mediumInner) layers.push(mediumInner);
+}
 
-    // LARGE: disc with inner “dot”
-    //   - outer colored disc (scale 1.0)
-    //   - middle white disc (scale 0.7)
-    //   - inner colored disc (scale 0.35)
-    if (largeFeatures.length) {
-      const largeOuter = buildLayerFor(largeFeatures, {
-        sizeScale: 1.6,   // was 1.1; now match others
-        colorMode: 'type'
-      });
-      const largeMid = buildLayerFor(largeFeatures, {
-        sizeScale: 1.2,
-        colorMode: 'white'
-      });
-      const largeInner = buildLayerFor(largeFeatures, {
-        sizeScale: 0.5,
-        colorMode: 'type'
-      });
+// LARGE: disc with inner “dot”
+//   - outer colored disc
+//   - middle white disc
+//   - inner colored disc
+if (largeFeatures.length) {
+  const largeOuter = buildLayerFor(largeFeatures, {
+    sizeScale: 2,
+    colorMode: 'type'
+  });
+  const largeMid = buildLayerFor(largeFeatures, {
+    sizeScale: 1.5,
+    colorMode: 'white'
+  });
+  const largeInner = buildLayerFor(largeFeatures, {
+    sizeScale: 0.75,
+    colorMode: 'type'
+  });
 
-      if (largeOuter) layers.push(largeOuter);
-      if (largeMid)  layers.push(largeMid);
-      if (largeInner) layers.push(largeInner);
-    }
+  if (largeOuter) layers.push(largeOuter);
+  if (largeMid)  layers.push(largeMid);
+  if (largeInner) layers.push(largeInner);
+}
 
-    GlRenderer.layers = layers;
+GlRenderer.layers = layers;
+
   };
 
   GlRenderer.fitTo = function fitTo(features) {
