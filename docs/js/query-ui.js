@@ -22,6 +22,21 @@
     let radiusCircle = null;
     let activeFeatures = [];
 
+    const coordPopupHtml = `
+      <div class="coord-popup">
+        <div class="coord-popup-title">New Location</div>
+        <div class="coord-popup-body">
+          <a
+            href="https://docs.google.com/forms/d/e/1FAIpQLScSD5FRGF3R6CmkYpzeY3e2pvKRPzDXUXRyuDkcMMV6ZZiRWQ/viewform"
+            target="fse_suggestions"
+            title="Suggest new data"
+          >
+            Suggest new airport <br />at these coordinates
+          </a>
+        </div>
+      </div>
+    `;
+
     function setAllFeatures(features) {
       allFeatures = Array.isArray(features) ? features : [];
     }
@@ -44,9 +59,18 @@
 
     function zoomToCoords(lat, lon) {
       if (!map) return;
-      if (coordMarker) coordMarker.remove();
-      coordMarker = L.marker([lat, lon]).addTo(map);
+
+      if (coordMarker) {
+        coordMarker.remove();
+        coordMarker = null;
+      }
+
+      coordMarker = L.marker([lat, lon])
+        .addTo(map)
+        .bindPopup(coordPopupHtml);
+
       map.setView([lat, lon], 8);
+      // Note: popup does NOT auto-open; user clicks the balloon
     }
 
     function selectedValues(selectEl) {
@@ -475,7 +499,6 @@
     }
 
     wireAccordion();
-
 
     return {
       setAllFeatures,

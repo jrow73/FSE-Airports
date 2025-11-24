@@ -377,6 +377,36 @@ button.ghost {
   color: #111827;
 }
 
+/* Coordinate search marker popup */
+.coord-popup {
+  font-family: var(--font, sans-serif);
+  padding: 4px 2px;
+}
+
+.coord-popup-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+}
+
+.coord-popup-body a {
+  color: #1e6fd9;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.coord-popup-body a:hover {
+  text-decoration: underline;
+}
+
+/* Optional: darker link color for dark mode */
+@media (prefers-color-scheme: dark) {
+  .coord-popup-body a {
+    color: #6fb6ff;
+  }
+}
+
+
 /* Small screens: collapse panel grid */
 @media (max-width: 900px) {
   .grid {
