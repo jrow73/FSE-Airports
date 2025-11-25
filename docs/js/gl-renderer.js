@@ -83,9 +83,11 @@
 
     function formatLocalServices() {
       if (!hasFuel && !hasMx) return 'None';
-      if (hasFuel && !hasMx) return 'Fuel';
+      if (hasFuel && !hasMx)  return 'Fuel';
+      if (!hasFuel && hasMx)  return 'Maintenance';
       return 'Fuel, Maintenance';
     }
+
 
     const servicesText = formatLocalServices();
 
