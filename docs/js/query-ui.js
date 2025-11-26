@@ -22,20 +22,27 @@
     let radiusCircle = null;
     let activeFeatures = [];
 
-    const coordPopupHtml = `
+    function buildCoordPopupHtml(lat, lon) {
+      const latStr = Number.isFinite(lat) ? lat.toFixed(6) : String(lat);
+      const lonStr = Number.isFinite(lon) ? lon.toFixed(6) : String(lon);
+      const href = `suggest-new.html?lat=${encodeURIComponent(latStr)}&lon=${encodeURIComponent(lonStr)}`;
+
+      return `
       <div class="coord-popup">
         <div class="coord-popup-title">New Location</div>
         <div class="coord-popup-body">
           <a
-            href="https://docs.google.com/forms/d/e/1FAIpQLScSD5FRGF3R6CmkYpzeY3e2pvKRPzDXUXRyuDkcMMV6ZZiRWQ/viewform"
-            target="fse_suggestions"
-            title="Suggest new data"
+            href="${href}"
+            target="_blank"
+            rel="noopener"
+            title="Suggest new airport at this location"
           >
             Suggest new airport <br />at these coordinates
           </a>
         </div>
       </div>
-    `;
+      `;
+    }
 
     function setAllFeatures(features) {
       allFeatures = Array.isArray(features) ? features : [];
@@ -67,7 +74,7 @@
 
       coordMarker = L.marker([lat, lon])
         .addTo(map)
-        .bindPopup(coordPopupHtml);
+        .bindPopup(buildCoordPopupHtml(lat, lon));
 
       map.setView([lat, lon], 8);
       // Note: popup does NOT auto-open; user clicks the balloon

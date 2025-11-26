@@ -105,12 +105,31 @@
            aria-label="Open in FSEconomy">&#128279;</a>`
       : '';
 
-    const suggestData = fseIcao
-      ? `<a href="https://docs.google.com/forms/d/e/1FAIpQLSdwa6fKEy08GvL_W6SUju6xLl3x2zTMug7gZRwS6Va8yqd_8A/viewform"
-           target="fse_suggestions"
-           title="Suggest new data"
-           aria-label="Suggest New">Suggest new data for ${fseIcao}</a>`
-      : '';
+    let suggestData = '';
+    if (fseIcao) {
+      const query = [
+        ['icao', fseIcao],
+        ['name', name],
+        ['city', p.city || ''],
+        ['state', p.state || ''],
+        ['country', p.country || ''],
+        ['elev', Number.isFinite(p.elev) ? String(p.elev) : ''],
+        ['longestRwy', p.longestRwy != null ? String(p.longestRwy) : ''],
+        ['lat', String(lat)],
+        ['lon', String(lng)]
+      ]
+        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
+        .join('&');
+
+      const href = `suggest-change.html?${query}`;
+
+      suggestData = `<a href="${href}"
+           target="_blank"
+           rel="noopener"
+           title="Suggest changes to this airport"
+           aria-label="Suggest changes">Suggest changes to this airport</a>`;
+    }
+
 
     const html = `
       <div class="ap-popup">
@@ -137,7 +156,7 @@
             <div class="ap-value">${lat} ${lng}</div>
           </div>
           <div class="ap-row">
-            <div class="menu-btn"><center>${suggestData}</a></center></div>
+            <div class="menu-btn"><center>${suggestData}</center></div>
           </div>
         </div>
       </div>
