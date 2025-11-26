@@ -42,7 +42,7 @@
       font-size: 0.9rem;
       color: #555;
     }
-    input[type="text"], textarea {
+    input[type="text"], textarea, select {
       width: 100%;
       box-sizing: border-box;
       font-family: inherit;
@@ -101,7 +101,15 @@
         <!-- ICAO -->
         <div class="label">ICAO</div>
         <div class="current-value" id="cur-icao"></div>
-        <div><input type="text" name="proposed_icao" placeholder="If ICAO is incorrect"></div>
+        <div>
+          <input
+            type="text"
+            name="proposed_icao"
+            id="proposed_icao"
+            placeholder="If ICAO is incorrect"
+            maxlength="4"
+          >
+        </div>
 
         <!-- Name -->
         <div class="label">Name</div>
@@ -126,12 +134,48 @@
         <!-- Elevation -->
         <div class="label">Elevation (ft)</div>
         <div class="current-value" id="cur-elev"></div>
-        <div><input type="text" name="proposed_elev" placeholder="Correct elevation"></div>
+        <div>
+          <input
+            type="text"
+            name="proposed_elev"
+            id="proposed_elev"
+            placeholder="Correct elevation"
+            maxlength="5"
+          >
+        </div>
 
         <!-- Longest runway -->
         <div class="label">Longest runway (ft)</div>
         <div class="current-value" id="cur-longest"></div>
-        <div><input type="text" name="proposed_longest" placeholder="Correct length"></div>
+        <div>
+          <input
+            type="text"
+            name="proposed_longest"
+            id="proposed_longest"
+            placeholder="Correct length"
+            maxlength="5"
+          >
+        </div>
+
+        <!-- Surface type -->
+        <div class="label">Surface type</div>
+        <div class="current-value" id="cur-surface"></div>
+        <div>
+          <select name="proposed_surface" id="proposed_surface">
+            <option value="">(no change)</option>
+            <option>Asphalt</option>
+            <option>Concrete</option>
+            <option>Coral</option>
+            <option>Dirt</option>
+            <option>Grass</option>
+            <option>Gravel</option>
+            <option>Helipad</option>
+            <option>Oil Treated</option>
+            <option>Snow</option>
+            <option>Steel Mats</option>
+            <option>Water</option>
+          </select>
+        </div>
       </div>
 
       <div style="margin-top:1rem;">
@@ -149,7 +193,7 @@
   </div>
 
   <script>
-    const FORM_ACTION_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+    const FORM_ACTION_URL = 'https://script.google.com/macros/s/AKfycbyK-kXfWHPG_3mQCT9WkeHXoGHeWsjZ_H9G8ThlfyWUz529_xVwWxUP5WxfUkQANOjoIQ/exec';
 
     function getQueryParams() {
       const params = {};
@@ -162,10 +206,50 @@
       return params;
     }
 
+    function initNumericFilters() {
+      // Only digits, max 5 characters
+      ['proposed_elev', 'proposed_longest'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => {
+          el.value = el.value.replace(/\D/g, '').slice(0, 5);
+        });
+      });
+    }
+
+    function validateChangeForm() {
+      const statusEl = document.getElementById('status');
+      const icao = document.getElementById('proposed_icao').value.trim();
+      const elev = document.getElementById('proposed_elev').value.trim();
+      const longest = document.getElementById('proposed_longest').value.trim();
+
+      // ICAO: optional, but if present must be 3 or 4 letters
+      if (icao && !/^[A-Za-z]{3,4}$/.test(icao)) {
+        statusEl.textContent = 'ICAO must be 3 or 4 letters (A–Z) only.';
+        statusEl.className = 'status error';
+        return false;
+      }
+
+      // Elevation: digits only, max 5 (input filter already enforces; this is just a sanity check)
+      if (elev && !/^[0-9]{1,5}$/.test(elev)) {
+        statusEl.textContent = 'Elevation must be numeric only (up to 5 digits).';
+        statusEl.className = 'status error';
+        return false;
+      }
+
+      // Longest: digits only, max 5
+      if (longest && !/^[0-9]{1,5}$/.test(longest)) {
+        statusEl.textContent = 'Longest runway must be numeric only (up to 5 digits).';
+        statusEl.className = 'status error';
+        return false;
+      }
+
+      return true;
+    }
+
     function init() {
       const params = getQueryParams();
 
-      // Fill summary + current values from query string
       const icao     = params.icao || '';
       const name     = params.name || '';
       const city     = params.city || '';
@@ -173,6 +257,7 @@
       const country  = params.country || '';
       const elev     = params.elev || '';
       const longest  = params.longestRwy || params.longest || '';
+      const surface  = params.surfaceType || '';
 
       document.getElementById('icao-input').value = icao;
       document.getElementById('airport-summary').textContent =
@@ -185,26 +270,26 @@
       document.getElementById('cur-country').textContent = country;
       document.getElementById('cur-elev').textContent    = elev;
       document.getElementById('cur-longest').textContent = longest;
+      document.getElementById('cur-surface').textContent = surface;
 
-      // Handle form submission
+      initNumericFilters();
+
       const form = document.getElementById('change-form');
       const statusEl = document.getElementById('status');
 
       form.addEventListener('submit', async (evt) => {
         evt.preventDefault();
-        statusEl.textContent = 'Sending...';
+        statusEl.textContent = '';
         statusEl.className = 'status';
+
+        if (!validateChangeForm()) {
+          return;
+        }
+
+        statusEl.textContent = 'Sending...';
 
         const formData = new FormData(form);
 
-        // Flatten our multiple proposed fields into individual rows in the Sheet
-        // For simplicity, we’ll send ONE row per field on this endpoint,
-        // but to keep code small we’ll just bundle into comments + fieldName.
-        // If you prefer one row with many columns, we can change the script.
-
-        // For now: send one "combined" record describing all props at once:
-        // Compose a text blob of changed fields in comments, and set fieldName="Multiple".
-        let changesText = '';
         const currentMap = {
           icao: icao,
           name: name,
@@ -212,7 +297,8 @@
           state: state,
           country: country,
           elev: elev,
-          longest: longest
+          longest: longest,
+          surface: surface
         };
 
         const proposedFields = [
@@ -222,21 +308,22 @@
           ['State', 'proposed_state', 'state'],
           ['Country', 'proposed_country', 'country'],
           ['Elevation (ft)', 'proposed_elev', 'elev'],
-          ['Longest runway (ft)', 'proposed_longest', 'longest']
+          ['Longest runway (ft)', 'proposed_longest', 'longest'],
+          ['Surface type', 'proposed_surface', 'surface']
         ];
 
+        let changesText = '';
         proposedFields.forEach(([label, propName, currentKey]) => {
           const val = formData.get(propName);
-          if (val && val.trim() !== '') {
+          if (val && val.toString().trim() !== '') {
             changesText += label + ': "' + (currentMap[currentKey] || '') +
-              '" → "' + val.trim() + '"\n';
+              '" → "' + val.toString().trim() + '"\n';
           }
         });
 
         const userComments = formData.get('comments') || '';
         const combinedComments = (changesText ? changesText + '\n' : '') + userComments;
 
-        // Now build minimal payload the Apps Script expects:
         const payload = new URLSearchParams();
         payload.append('type', 'change');
         payload.append('icao', icao);
@@ -247,9 +334,9 @@
         payload.append('source', 'FSE Map Viewer');
 
         try {
-          const res = await fetch(FORM_ACTION_URL, {
+          await fetch(FORM_ACTION_URL, {
             method: 'POST',
-            mode: 'no-cors', // Apps Script may require this from static sites
+            mode: 'no-cors',
             body: payload
           });
 

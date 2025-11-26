@@ -29,7 +29,7 @@
       font-weight: 500;
       font-size: 0.9rem;
     }
-    input[type="text"], textarea {
+    input[type="text"], textarea, select {
       width: 100%;
       box-sizing: border-box;
       font-family: inherit;
@@ -45,6 +45,10 @@
     textarea {
       min-height: 80px;
       resize: vertical;
+    }
+    small {
+      font-size: 0.75rem;
+      color: #666;
     }
     .buttons {
       margin-top: 1rem;
@@ -82,29 +86,83 @@
     <form id="new-airport-form">
       <input type="hidden" name="type" value="new">
 
-      <label for="icao">ICAO (if known)</label>
-      <input type="text" id="icao" name="icao" placeholder="e.g. KABC">
+      <label for="icao">ICAO <span style="color:#b91c1c">*</span></label>
+      <input
+        type="text"
+        id="icao"
+        name="icao"
+        placeholder="e.g. KABC"
+        maxlength="4"
+        required
+      >
+      <small>Required. Must be 3–4 letters.</small>
 
-      <label for="name">Airport name</label>
-      <input type="text" id="name" name="name" placeholder="Airport name">
+      <label for="name">Airport name <span style="color:#b91c1c">*</span></label>
+      <input type="text" id="name" name="name" placeholder="Airport name" required>
+      <small>Required.</small>
 
-      <label for="city">City</label>
-      <input type="text" id="city" name="city" placeholder="City">
+      <label for="city">City <span style="color:#b91c1c">*</span></label>
+      <input type="text" id="city" name="city" placeholder="City" required>
+      <small>Required.</small>
 
       <label for="state">State / Region</label>
       <input type="text" id="state" name="state" placeholder="State or region">
+      <small>Optional.</small>
 
-      <label for="country">Country</label>
-      <input type="text" id="country" name="country" placeholder="Country">
+      <label for="country">Country <span style="color:#b91c1c">*</span></label>
+      <input type="text" id="country" name="country" placeholder="Country" required>
+      <small>Required.</small>
 
-      <label for="lat">Latitude</label>
+      <label for="elev">Elevation (ft) <span style="color:#b91c1c">*</span></label>
+      <input
+        type="text"
+        id="elev"
+        name="elev"
+        placeholder="e.g. 1234"
+        maxlength="5"
+        required
+      >
+      <small>Required. Numbers only, up to 5 digits.</small>
+
+      <label for="longestRwy">Longest runway (ft) <span style="color:#b91c1c">*</span></label>
+      <input
+        type="text"
+        id="longestRwy"
+        name="longestRwy"
+        placeholder="e.g. 4500"
+        maxlength="5"
+        required
+      >
+      <small>Required. Numbers only, up to 5 digits.</small>
+
+      <label for="surfaceType">Surface type <span style="color:#b91c1c">*</span></label>
+      <select id="surfaceType" name="surfaceType" required>
+        <option value="">(select surface type)</option>
+        <option>Asphalt</option>
+        <option>Concrete</option>
+        <option>Coral</option>
+        <option>Dirt</option>
+        <option>Grass</option>
+        <option>Gravel</option>
+        <option>Helipad</option>
+        <option>Oil Treated</option>
+        <option>Snow</option>
+        <option>Steel Mats</option>
+        <option>Water</option>
+      </select>
+      <small>Required.</small>
+
+      <label for="lat">Latitude <span style="color:#b91c1c">*</span></label>
       <input type="text" id="lat" name="lat" readonly>
+      <small>Required (from map pin).</small>
 
-      <label for="lon">Longitude</label>
+      <label for="lon">Longitude <span style="color:#b91c1c">*</span></label>
       <input type="text" id="lon" name="lon" readonly>
+      <small>Required (from map pin).</small>
 
-      <label for="comments">Additional comments</label>
-      <textarea id="comments" name="comments" placeholder="Any other details (runway type/length, notes, etc.)"></textarea>
+      <label for="comments">Additional comments <span style="color:#b91c1c">*</span></label>
+      <textarea id="comments" name="comments" placeholder="Any other details (runway type/length, notes, etc.)" required></textarea>
+      <small>Required. Brief description is fine.</small>
 
       <div class="buttons">
         <button type="submit" class="btn-primary">Submit new airport</button>
@@ -116,7 +174,7 @@
   </div>
 
   <script>
-    const FORM_ACTION_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+    const FORM_ACTION_URL = 'https://script.google.com/macros/s/AKfycbyK-kXfWHPG_3mQCT9WkeHXoGHeWsjZ_H9G8ThlfyWUz529_xVwWxUP5WxfUkQANOjoIQ/exec';
 
     function getQueryParams() {
       const params = {};
@@ -129,6 +187,104 @@
       return params;
     }
 
+    function initNumericFilters() {
+      // Only digits, max 5 characters for elevation and longest runway
+      ['elev', 'longestRwy'].forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', () => {
+          el.value = el.value.replace(/\D/g, '').slice(0, 5);
+        });
+      });
+    }
+
+    function validateNewForm() {
+      const statusEl = document.getElementById('status');
+
+      const icao     = document.getElementById('icao').value.trim();
+      const name     = document.getElementById('name').value.trim();
+      const city     = document.getElementById('city').value.trim();
+      const state    = document.getElementById('state').value.trim(); // optional
+      const country  = document.getElementById('country').value.trim();
+      const elev     = document.getElementById('elev').value.trim();
+      const longest  = document.getElementById('longestRwy').value.trim();
+      const surface  = document.getElementById('surfaceType').value.trim();
+      const lat      = document.getElementById('lat').value.trim();
+      const lon      = document.getElementById('lon').value.trim();
+      const comments = document.getElementById('comments').value.trim();
+
+      // ICAO: required, 3 or 4 letters
+      if (!icao) {
+        statusEl.textContent = 'ICAO is required.';
+        statusEl.className = 'status error';
+        return false;
+      }
+      if (!/^[A-Za-z]{3,4}$/.test(icao)) {
+        statusEl.textContent = 'ICAO must be 3 or 4 letters (A–Z) only.';
+        statusEl.className = 'status error';
+        return false;
+      }
+
+      // Basic required fields
+      if (!name) {
+        statusEl.textContent = 'Airport name is required.';
+        statusEl.className = 'status error';
+        return false;
+      }
+      if (!city) {
+        statusEl.textContent = 'City is required.';
+        statusEl.className = 'status error';
+        return false;
+      }
+      if (!country) {
+        statusEl.textContent = 'Country is required.';
+        statusEl.className = 'status error';
+        return false;
+      }
+      if (!elev) {
+        statusEl.textContent = 'Elevation is required.';
+        statusEl.className = 'status error';
+        return false;
+      }
+      if (!longest) {
+        statusEl.textContent = 'Longest runway is required.';
+        statusEl.className = 'status error';
+        return false;
+      }
+      if (!surface) {
+        statusEl.textContent = 'Surface type is required.';
+        statusEl.className = 'status error';
+        return false;
+      }
+      if (!lat || !lon) {
+        statusEl.textContent = 'Latitude and longitude are required (please create the pin from the map).';
+        statusEl.className = 'status error';
+        return false;
+      }
+      if (!comments) {
+        statusEl.textContent = 'Please provide a brief comment/description.';
+        statusEl.className = 'status error';
+        return false;
+      }
+
+      // Numeric checks
+      if (!/^[0-9]{1,5}$/.test(elev)) {
+        statusEl.textContent = 'Elevation must be numeric only (up to 5 digits).';
+        statusEl.className = 'status error';
+        return false;
+      }
+      if (!/^[0-9]{1,5}$/.test(longest)) {
+        statusEl.textContent = 'Longest runway must be numeric only (up to 5 digits).';
+        statusEl.className = 'status error';
+        return false;
+      }
+
+      // State is optional: no constraints beyond that for now
+      // Surface type is constrained by the <select>, so no extra check needed beyond "not empty"
+
+      return true;
+    }
+
     function init() {
       const params = getQueryParams();
       const lat = params.lat || params.latitude || '';
@@ -137,24 +293,33 @@
       document.getElementById('lat').value = lat;
       document.getElementById('lon').value = lon;
 
+      initNumericFilters();
+
       const form = document.getElementById('new-airport-form');
       const statusEl = document.getElementById('status');
 
       form.addEventListener('submit', async (evt) => {
         evt.preventDefault();
-        statusEl.textContent = 'Sending...';
+        statusEl.textContent = '';
         statusEl.className = 'status';
+
+        if (!validateNewForm()) {
+          return;
+        }
+
+        statusEl.textContent = 'Sending...';
 
         const formData = new FormData(form);
         const payload = new URLSearchParams();
 
         payload.append('type', 'new');
-        ['icao','name','city','state','country','lat','lon','comments'].forEach((key) => {
+        // Only "state" is optional. Everything else is required, but we still guard with "|| ''" for safety.
+        ['icao','name','city','state','country','elev','longestRwy','surfaceType','lat','lon','comments'].forEach((key) => {
           payload.append(key, formData.get(key) || '');
         });
 
         try {
-          const res = await fetch(FORM_ACTION_URL, {
+          await fetch(FORM_ACTION_URL, {
             method: 'POST',
             mode: 'no-cors',
             body: payload
