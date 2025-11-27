@@ -81,6 +81,21 @@
     }
     .status.ok { color: #15803d; }
     .status.error { color: #b91c1c; }
+
+    .duplicate-field {
+      border-color: #b91c1c !important;
+      color: #b91c1c;
+    }
+    .btn-disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .submit-hint {
+      margin-top: 0.25rem;
+      font-size: 0.8rem;
+      color: #b91c1c;
+    }
+
   </style>
 </head>
 <body>
@@ -118,22 +133,49 @@
         <!-- Name -->
         <div class="label">Name</div>
         <div class="current-value" id="cur-name"></div>
-        <div><input type="text" name="proposed_name" placeholder="What is the correct name"></div>
-
+        <div>
+          <input
+            type="text"
+            name="proposed_name"
+            id="proposed_name"
+            placeholder="What is the correct name"
+          >
+        </div>
         <!-- City -->
         <div class="label">City</div>
         <div class="current-value" id="cur-city"></div>
-        <div><input type="text" name="proposed_city" placeholder="What is the correct city"></div>
+        <div>
+          <input
+            type="text"
+            name="proposed_city"
+            id="proposed_city"
+            placeholder="What is the correct city"
+          >
+        </div>
 
         <!-- State -->
         <div class="label">State</div>
         <div class="current-value" id="cur-state"></div>
-        <div><input type="text" name="proposed_state" placeholder="What is the correct state/province"></div>
+        <div>
+          <input
+            type="text"
+            name="proposed_state"
+            id="proposed_state"
+            placeholder="What is the correct state/province"
+          >
+        </div>
 
         <!-- Country -->
         <div class="label">Country</div>
         <div class="current-value" id="cur-country"></div>
-        <div><input type="text" name="proposed_country" placeholder="What is the correct country"></div>
+        <div>
+          <input
+            type="text"
+            name="proposed_country"
+            id="proposed_country"
+            placeholder="What is the correct country"
+          >
+        </div>
 
         <!-- Elevation -->
         <div class="label">Elevation (ft)</div>
@@ -204,10 +246,11 @@
       </div>
 
       <div class="buttons">
-        <button type="submit" class="btn-primary">Submit suggestion</button>
+        <button type="submit" class="btn-primary" id="submit-btn">Submit suggestion</button>
         <button type="button" class="btn-secondary" onclick="window.close()">Close</button>
       </div>
 
+      <div id="submit-hint" class="submit-hint"></div>
       <div id="status" class="status"></div>
     </form>
   </div>
@@ -266,6 +309,102 @@
 
       return true;
     }
+
+    // Detect fields where proposed value == current value
+    function evaluateDuplicates() {
+      const fieldPairs = [
+        ['proposed_icao',       'cur-icao'],
+        ['proposed_name',       'cur-name'],
+        ['proposed_city',       'cur-city'],
+        ['proposed_state',      'cur-state'],
+        ['proposed_country',    'cur-country'],
+        ['proposed_elev',       'cur-elev'],
+        ['proposed_longest',    'cur-longest'],
+        ['proposed_surface',    'cur-surface'],
+        ['proposed_airportType','cur-airportType']
+      ];
+
+      const submitBtn = document.getElementById('submit-btn');
+      const hintEl    = document.getElementById('submit-hint');
+
+      let hasDuplicate = false;
+
+      fieldPairs.forEach(([proposedId, currentId]) => {
+        const inputEl = document.getElementById(proposedId);
+        const curEl   = document.getElementById(currentId);
+        if (!inputEl || !curEl) return;
+
+        // Clear previous highlighting
+        inputEl.classList.remove('duplicate-field');
+        curEl.classList.remove('duplicate-field');
+        const labelEl = curEl.previousElementSibling;
+        if (labelEl && labelEl.classList.contains('label')) {
+          labelEl.classList.remove('duplicate-field');
+        }
+
+      const proposedRaw = inputEl.value || '';
+      const currentRaw  = curEl.textContent || '';
+
+      const proposedVal = proposedRaw.trim();
+      if (!proposedVal) return; // nothing typed for this field
+
+      const currentVal  = currentRaw.trim();
+
+      // Case-insensitive comparison
+      if (proposedVal.toLowerCase() === currentVal.toLowerCase()) {
+        hasDuplicate = true;
+        inputEl.classList.add('duplicate-field');
+        curEl.classList.add('duplicate-field');
+        if (labelEl && labelEl.classList.contains('label')) {
+          labelEl.classList.add('duplicate-field');
+        }
+      }
+
+      });
+
+      if (submitBtn) {
+        submitBtn.disabled = hasDuplicate;
+        if (hasDuplicate) {
+          submitBtn.classList.add('btn-disabled');
+        } else {
+          submitBtn.classList.remove('btn-disabled');
+        }
+      }
+
+      if (hintEl) {
+        hintEl.textContent = hasDuplicate
+          ? 'Delete or change any suggestions that match the current values before submitting.'
+          : '';
+      }
+
+      return hasDuplicate;
+    }
+
+    // Attach input listeners so duplicates are detected in real time
+    function initDuplicateWatcher() {
+      const ids = [
+        'proposed_icao',
+        'proposed_name',
+        'proposed_city',
+        'proposed_state',
+        'proposed_country',
+        'proposed_elev',
+        'proposed_longest',
+        'proposed_surface',
+        'proposed_airportType'
+      ];
+
+      ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', evaluateDuplicates);
+        el.addEventListener('change', evaluateDuplicates);
+      });
+
+      // Initial evaluation
+      evaluateDuplicates();
+    }
+
 
     function init() {
       const params = getQueryParams();
@@ -412,6 +551,7 @@ document.head.appendChild(style);
 
       initNumericFilters();
       initCommentCounter();
+      initDuplicateWatcher();
 
 
       const form = document.getElementById('change-form');
@@ -421,6 +561,12 @@ document.head.appendChild(style);
         evt.preventDefault();
         statusEl.textContent = '';
         statusEl.className = 'status';
+
+        // Block submission if any proposed value matches the current value
+        if (evaluateDuplicates()) {
+          // Duplicate highlighting + hint are handled by evaluateDuplicates()
+          return;
+        }
 
         if (!validateChangeForm()) {
           return;
@@ -459,21 +605,22 @@ document.head.appendChild(style);
         const userComments = (formData.get('comments') || '').toString().trim();
 
         const changes = [];
-        let anyProposed = false; // track if the user typed anything at all in the proposed fields
+        let anyProposed = false;
 
-        // Build changes array: one entry per field that has a *different* proposed value
         proposedFields.forEach(([label, propName, currentKey]) => {
           const raw = formData.get(propName);
           const proposedVal = raw ? raw.toString().trim() : '';
           if (!proposedVal) return; // skip empty inputs
 
-          anyProposed = true; // user attempted a change for this field
+          anyProposed = true;
 
-          const currentVal = currentMap[currentKey] != null ? String(currentMap[currentKey]) : '';
-          const normCurrent = currentVal.trim();
-          const normProposed = proposedVal; // already trimmed above
+          const currentValRaw = currentMap[currentKey] != null ? String(currentMap[currentKey]) : '';
+          const currentVal    = currentValRaw.trim();
 
-          // If proposed value is effectively the same as current, skip it
+          const normCurrent  = currentVal.toLowerCase();
+          const normProposed = proposedVal.toLowerCase();
+
+          // If proposed value is effectively the same as current (ignoring case), skip it
           if (normProposed === normCurrent) return;
 
           changes.push({
