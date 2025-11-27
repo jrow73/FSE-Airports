@@ -223,12 +223,12 @@
       const elev = document.getElementById('proposed_elev').value.trim();
       const longest = document.getElementById('proposed_longest').value.trim();
 
-      // ICAO: optional, but if present must be 3 or 4 letters
-      if (icao && !/^[A-Za-z]{3,4}$/.test(icao)) {
-        statusEl.textContent = 'ICAO must be 3 or 4 letters (A–Z) only.';
-        statusEl.className = 'status error';
-        return false;
-      }
+  // ICAO: optional, but if present must be 3 or 4 alphanumeric characters
+  if (icao && !/^[A-Za-z0-9]{3,4}$/.test(icao)) {
+    statusEl.textContent = 'ICAO must be 3 or 4 alphanumeric characters (A–Z, 0–9).';
+    statusEl.className = 'status error';
+    return false;
+  }
 
       // Elevation: digits only, max 5 (input filter already enforces; this is just a sanity check)
       if (elev && !/^[0-9]{1,5}$/.test(elev)) {

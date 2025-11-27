@@ -81,7 +81,7 @@
 <body>
   <div class="container">
     <h1>Suggest a new airport</h1>
-    <p>The latitude/longitude below comes from the pin you placed on the map and cannot be changed.</p>
+    <p>The latitude/longitude below comes from the pin you placed on the map and cannot be changed. If the pin was not exact, please go back to the map and start from a new pin in the correct location.</p>
 
     <form id="new-airport-form">
       <input type="hidden" name="type" value="new">
@@ -95,45 +95,38 @@
         maxlength="4"
         required
       >
-      <small>Required. Must be 3–4 letters.</small>
-
+   
       <label for="name">Airport name <span style="color:#b91c1c">*</span></label>
       <input type="text" id="name" name="name" placeholder="Airport name" required>
-      <small>Required.</small>
-
+  
       <label for="city">City <span style="color:#b91c1c">*</span></label>
       <input type="text" id="city" name="city" placeholder="City" required>
-      <small>Required.</small>
 
-      <label for="state">State / Region</label>
-      <input type="text" id="state" name="state" placeholder="State or region">
-      <small>Optional.</small>
+      <label for="state">State / Province / Territory</label>
+      <input type="text" id="state" name="state" placeholder="(if applicable) [USA, CAN, AUS only]">
 
       <label for="country">Country <span style="color:#b91c1c">*</span></label>
       <input type="text" id="country" name="country" placeholder="Country" required>
-      <small>Required.</small>
 
       <label for="elev">Elevation (ft) <span style="color:#b91c1c">*</span></label>
       <input
         type="text"
         id="elev"
         name="elev"
-        placeholder="e.g. 1234"
+        placeholder="e.g. 1234, numers only"
         maxlength="5"
         required
       >
-      <small>Required. Numbers only, up to 5 digits.</small>
 
       <label for="longestRwy">Longest runway (ft) <span style="color:#b91c1c">*</span></label>
       <input
         type="text"
         id="longestRwy"
         name="longestRwy"
-        placeholder="e.g. 4500"
+        placeholder="e.g. 4500, numbers only"
         maxlength="5"
         required
       >
-      <small>Required. Numbers only, up to 5 digits.</small>
 
       <label for="surfaceType">Surface type <span style="color:#b91c1c">*</span></label>
       <select id="surfaceType" name="surfaceType" required>
@@ -150,19 +143,15 @@
         <option>Steel Mats</option>
         <option>Water</option>
       </select>
-      <small>Required.</small>
 
       <label for="lat">Latitude <span style="color:#b91c1c">*</span></label>
       <input type="text" id="lat" name="lat" readonly>
-      <small>Required (from map pin).</small>
 
       <label for="lon">Longitude <span style="color:#b91c1c">*</span></label>
       <input type="text" id="lon" name="lon" readonly>
-      <small>Required (from map pin).</small>
 
       <label for="comments">Additional comments <span style="color:#b91c1c">*</span></label>
-      <textarea id="comments" name="comments" placeholder="Any other details (runway type/length, notes, etc.)" required></textarea>
-      <small>Required. Brief description is fine.</small>
+      <textarea id="comments" name="comments" placeholder="Any other notes, or links to a verification source" required></textarea>
 
       <div class="buttons">
         <button type="submit" class="btn-primary">Submit new airport</button>
@@ -213,17 +202,17 @@
       const lon      = document.getElementById('lon').value.trim();
       const comments = document.getElementById('comments').value.trim();
 
-      // ICAO: required, 3 or 4 letters
-      if (!icao) {
+        // ICAO: required, 3 or 4 alphanumeric characters
+        if (!icao) {
         statusEl.textContent = 'ICAO is required.';
         statusEl.className = 'status error';
         return false;
-      }
-      if (!/^[A-Za-z]{3,4}$/.test(icao)) {
-        statusEl.textContent = 'ICAO must be 3 or 4 letters (A–Z) only.';
+        }
+        if (!/^[A-Za-z0-9]{3,4}$/.test(icao)) {
+        statusEl.textContent = 'ICAO must be 3 or 4 alphanumeric characters (A–Z, 0–9).';
         statusEl.className = 'status error';
         return false;
-      }
+        }
 
       // Basic required fields
       if (!name) {
