@@ -87,9 +87,10 @@
   <div class="container">
     <h1>Suggest changes to the FSE airport at this map position.</h1>
         <p id="airport-summary"></p>
-        <hr />NOTE: If there is no IRL airport at all at this position and the 
-        IRL ICAO has a value assigned, propose the IRL ICAO as "XXXX" 
-        <hr /><br />
+        <hr />NOTE: If there is no IRL airport at all at this map position<br />
+        <b>BUT</b> the IRL ICAO in the table below has a value assigned, <br />
+        propose the IRL ICAO as "XXXX" to indicate that the FSE airport is closed.
+        <hr /><hr /><br />
 
     <form id="change-form">
       <input type="hidden" name="type" value="change">
@@ -97,9 +98,9 @@
       <input type="hidden" name="source" value="FSE Map Viewer">
 
       <div class="grid">
-        <div class="grid-header">Field</div>
-        <div class="grid-header">Current</div>
-        <div class="grid-header">Proposed value</div>
+        <div class="grid-header">Field Name</div>
+        <div class="grid-header">Current Value</div>
+        <div class="grid-header">Proposed Value</div>
 
         <!-- IRL ICAO -->
         <div class="label">IRL ICAO (real-world)</div>
@@ -109,7 +110,7 @@
             type="text"
             name="proposed_icao"
             id="proposed_icao"
-            placeholder="If IRL ICAO is incorrect"
+            placeholder="What is the correct IRL ICAO at this map position?"
             maxlength="4"
           >
         </div>
@@ -117,22 +118,22 @@
         <!-- Name -->
         <div class="label">Name</div>
         <div class="current-value" id="cur-name"></div>
-        <div><input type="text" name="proposed_name" placeholder="Correct name"></div>
+        <div><input type="text" name="proposed_name" placeholder="What is the correct name"></div>
 
         <!-- City -->
         <div class="label">City</div>
         <div class="current-value" id="cur-city"></div>
-        <div><input type="text" name="proposed_city" placeholder="Correct city"></div>
+        <div><input type="text" name="proposed_city" placeholder="What is the correct city"></div>
 
         <!-- State -->
         <div class="label">State</div>
         <div class="current-value" id="cur-state"></div>
-        <div><input type="text" name="proposed_state" placeholder="Correct state/region"></div>
+        <div><input type="text" name="proposed_state" placeholder="What is the correct state/province"></div>
 
         <!-- Country -->
         <div class="label">Country</div>
         <div class="current-value" id="cur-country"></div>
-        <div><input type="text" name="proposed_country" placeholder="Correct country"></div>
+        <div><input type="text" name="proposed_country" placeholder="What is the correct country"></div>
 
         <!-- Elevation -->
         <div class="label">Elevation (ft)</div>
@@ -142,7 +143,7 @@
             type="text"
             name="proposed_elev"
             id="proposed_elev"
-            placeholder="Correct elevation"
+            placeholder="What is the correct elevation"
             maxlength="5"
           >
         </div>
@@ -155,7 +156,7 @@
             type="text"
             name="proposed_longest"
             id="proposed_longest"
-            placeholder="Correct length"
+            placeholder="What is the correct length"
             maxlength="5"
           >
         </div>
@@ -183,7 +184,10 @@
 
       <div style="margin-top:1rem;">
         <label for="comments"><strong>Additional comments</strong></label>
-        <textarea id="comments" name="comments" placeholder="Anything else we should know?"></textarea>
+        <textarea id="comments" name="comments" placeholder="Anything else we should know? Is there a source website we can use to verify this suggestion?" maxlength="255"></textarea>
+        <div id="comment-counter" style="font-size:0.75rem; color:#6b7280; margin-top:2px;">
+          0 / 255
+        </div>
       </div>
 
       <div class="buttons">
@@ -268,6 +272,20 @@
 
       // Hidden field: what we send to the sheet / Apps Script as the key
       document.getElementById('icao-input').value = fseIcao;
+
+// Comment character counter (max 255)
+function initCommentCounter() {
+  const textarea = document.getElementById('comments');
+  const counter  = document.getElementById('comment-counter');
+  if (!textarea || !counter) return;
+
+  textarea.addEventListener('input', () => {
+    const length = textarea.value.length;
+    counter.textContent = `${length} / 255`;
+  });
+}
+
+
 
 // Build stylized summary card
 const summaryEl = document.getElementById('airport-summary');
@@ -360,6 +378,8 @@ document.head.appendChild(style);
       document.getElementById('cur-surface').textContent = surface;
 
       initNumericFilters();
+      initCommentCounter();
+
 
       const form = document.getElementById('change-form');
       const statusEl = document.getElementById('status');
