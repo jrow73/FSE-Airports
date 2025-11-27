@@ -134,12 +134,11 @@
 
       const href = `suggest-change.html?${query}`;
 
-      suggestData = `<a href="#"
-            class="popup-link"
-            data-suggest-url="${href}"
-            title="Suggest changes to this airport"
-            aria-label="Suggest changes">Suggest changes to this airport</a>`;
-
+      suggestData = `<a href="${href}"
+           target="_blank"
+           rel="noopener"
+           title="Suggest changes to this airport"
+           aria-label="Suggest changes">Suggest changes to this airport</a>`;
     }
 
 
