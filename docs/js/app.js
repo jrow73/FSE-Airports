@@ -6,6 +6,10 @@
 
   const { map } = MapModule.init();
   GlRenderer.attach(map);
+  if (GlRenderer.renderLegend) {
+    GlRenderer.renderLegend();
+  }
+
 
   const el = {
     // Query UI

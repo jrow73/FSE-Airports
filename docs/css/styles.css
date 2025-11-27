@@ -9,6 +9,7 @@ body {
 #app {
   height: 100%;
   margin: 0;
+  position: relative; /* so the legend can be absolutely placed inside */
 }
 
 /* Layout: topbar + map */
@@ -425,4 +426,83 @@ button.ghost {
   .top-right {
     grid-row: 3;
   }
+}
+
+/* --- Map legend ----------------------------------------------------------- */
+.map-legend {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 1500;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 6px;
+  padding: 6px 8px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  font-size: 11px;
+  color: #111827;
+  max-width: 200px;
+  pointer-events: none;   /* let map clicks pass through if you like */
+}
+
+.map-legend-section + .map-legend-section {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.map-legend-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.map-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.map-legend-row:last-child {
+  margin-bottom: 0;
+}
+
+.legend-marker {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid #4b5563;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Small = solid dot */
+.legend-marker.marker-small {
+  background: #4b5563;
+}
+
+/* Medium = single outlined circle (white inside, one ring) */
+.legend-marker.marker-medium {
+  background: #ffffff;
+}
+/* no pseudo-elements needed; base border = the single ring */
+
+/* Large = two rings (outer border + inner ring) */
+.legend-marker.marker-large {
+  background: transparent;
+}
+.legend-marker.marker-large::before {
+  content: "";
+  position: absolute;
+  inset: 3px;                /* inner ring slightly inset */
+  border-radius: inherit;
+  border: 2px solid #4b5563; /* same color as outer ring */
+}
+
+/* Type color swatch — color is set inline from JS using colorFromProps */
+.legend-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid #6b7280;
+  box-sizing: border-box;
 }

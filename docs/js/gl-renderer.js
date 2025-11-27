@@ -17,7 +17,15 @@
     // Return {r,g,b,a} in 0..1
     if (t.includes('mil'))   return { r: 1.0, g: 0.15, b: 0.16, a: 1 }; // red
     if (t.includes('water')) return { r: 0.0, g: 0.78, b: 1.0, a: 1 }; // blue
-    return                    { r: 0.4, g: 0.4, b: 0.4, a: 1 };       // green (civil/default)
+    return                    { r: 0.4, g: 0.4, b: 0.4, a: 1 };       // grey (civil/default)
+  }
+
+  function colorToCss(c) {
+    if (!c) return 'rgb(0, 0, 0)';
+    const r = Math.round((c.r || 0) * 255);
+    const g = Math.round((c.g || 0) * 255);
+    const b = Math.round((c.b || 0) * 255);
+    return `rgb(${r}, ${g}, ${b})`;
   }
 
   function zoomScale(z) {
@@ -348,6 +356,52 @@ if (largeFeatures.length) {
 GlRenderer.layers = layers;
 
   };
+
+    GlRenderer.renderLegend = function renderLegend() {
+    const el = document.getElementById('mapLegend');
+    if (!el) return;
+
+    // Size legend rows: shape description is conceptual; shapes are styled in CSS
+    const sizeRows = [
+      { cls: 'marker-small',  label: '1 Lot' },
+      { cls: 'marker-medium', label: '2 Lots' },
+      { cls: 'marker-large',  label: '3 Lots' }
+    ].map(entry => {
+      return `
+        <div class="map-legend-row">
+          <span class="legend-marker ${entry.cls}"></span>
+          <span>${entry.label}</span>
+        </div>`;
+    }).join('');
+
+    // Type legend rows: colors come from the same colorFromProps used for markers
+    const typeModels = [
+      { label: 'Civil',    color: colorFromProps({ type: 'civil' }) },
+      { label: 'Water',    color: colorFromProps({ type: 'water' }) },
+      { label: 'Military', color: colorFromProps({ type: 'military' }) }
+    ];
+
+    const typeRows = typeModels.map(entry => {
+      const cssColor = colorToCss(entry.color);
+      return `
+        <div class="map-legend-row">
+          <span class="legend-swatch" style="background:${cssColor};"></span>
+          <span>${entry.label}</span>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="map-legend-section">
+        <div class="map-legend-title">Size</div>
+        ${sizeRows}
+      </div>
+      <div class="map-legend-section">
+        <div class="map-legend-title">Type</div>
+        ${typeRows}
+      </div>
+    `;
+  };
+
 
   GlRenderer.fitTo = function fitTo(features) {
     if (!features || !features.length || !GlRenderer.map) return;
