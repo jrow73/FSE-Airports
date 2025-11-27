@@ -459,21 +459,31 @@ document.head.appendChild(style);
         const userComments = (formData.get('comments') || '').toString().trim();
 
         const changes = [];
+        let anyProposed = false; // track if the user typed anything at all in the proposed fields
 
-        // Build changes array: one entry per field that has a proposed value
+        // Build changes array: one entry per field that has a *different* proposed value
         proposedFields.forEach(([label, propName, currentKey]) => {
           const raw = formData.get(propName);
           const proposedVal = raw ? raw.toString().trim() : '';
-          if (!proposedVal) return; // skip unchanged fields
+          if (!proposedVal) return; // skip empty inputs
+
+          anyProposed = true; // user attempted a change for this field
+
+          const currentVal = currentMap[currentKey] != null ? String(currentMap[currentKey]) : '';
+          const normCurrent = currentVal.trim();
+          const normProposed = proposedVal; // already trimmed above
+
+          // If proposed value is effectively the same as current, skip it
+          if (normProposed === normCurrent) return;
 
           changes.push({
             fieldName: label,
-            currentValue: currentMap[currentKey] || '',
+            currentValue: currentVal,
             proposedValue: proposedVal
           });
         });
 
-        // If there were no field changes but the user left a general comment,
+        // If there were no *field* changes but the user left a general comment,
         // record that as a single "General" row.
         if (changes.length === 0 && userComments) {
           changes.push({
@@ -483,9 +493,15 @@ document.head.appendChild(style);
           });
         }
 
-        // If absolutely nothing was entered, show an error
+        // If still no changes to send
         if (changes.length === 0) {
-          statusEl.textContent = 'Please propose at least one change or add a comment.';
+          if (anyProposed) {
+            // User tried to change fields, but all proposed values matched current values
+            statusEl.textContent = 'All proposed values already match the current values. Nothing to submit.';
+          } else {
+            // User didn't type anything in any field and no comment
+            statusEl.textContent = 'Please propose at least one change or add a comment.';
+          }
           statusEl.className = 'status error';
           return;
         }
