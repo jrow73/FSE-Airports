@@ -32,9 +32,9 @@
         <div class="coord-popup-title">New Location</div>
         <div class="coord-popup-body">
           <a
-            href="${href}"
-            target="_blank"
-            rel="noopener"
+            href="a"
+            class="popup-link"
+            data-suggest-URL="${href}"
             title="Suggest new airport at this location"
           >
             Suggest new airport <br />at these coordinates

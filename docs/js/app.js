@@ -122,3 +122,59 @@
   // boot
   load();
 })();
+
+/* -------------------------------------------------------------------------- */
+/* Suggestion Modal Helper (iframe-safe / Google Sites–safe)                  */
+/* -------------------------------------------------------------------------- */
+(function initSuggestionModal(global) {
+  const modal  = document.getElementById('suggestModal');
+  const frame  = document.getElementById('suggestModalFrame');
+  const closeBtn = document.getElementById('suggestModalClose');
+
+  if (!modal || !frame) return;
+
+  const api = {
+    open(url) {
+      frame.src = url;
+      modal.classList.remove('hidden');
+      modal.setAttribute('aria-hidden', 'false');
+    },
+    close() {
+      modal.classList.add('hidden');
+      modal.setAttribute('aria-hidden', 'true');
+      frame.src = 'about:blank';
+    }
+  };
+
+  // Close with X button
+  closeBtn.addEventListener('click', () => api.close());
+
+  // Close clicking backdrop
+  modal.querySelector('.suggest-modal-backdrop')
+       .addEventListener('click', () => api.close());
+
+  // ESC closes modal
+  document.addEventListener('keydown', (evt) => {
+    if (evt.key === 'Escape') api.close();
+  });
+
+  // Listen to postMessage (works even inside Google Sites iframe)
+  window.addEventListener("message", (evt) => {
+    if (evt.data && evt.data.type === "fse-close-modal") {
+      api.close();
+    }
+  });
+
+  // Store globally for popup anchors
+  global.SuggestModal = api;
+
+  // Delegate links with data-suggest-url
+  document.addEventListener('click', (evt) => {
+    const link = evt.target.closest('[data-suggest-url]');
+    if (link) {
+      evt.preventDefault();
+      api.open(link.getAttribute('data-suggest-url'));
+    }
+  });
+
+})(window);

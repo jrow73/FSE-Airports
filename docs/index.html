@@ -262,6 +262,27 @@
     <!-- Map fills the rest -->
     <main id="map"></main>
 
+        <!-- Suggestion modal overlay -->
+    <div id="suggestModal" class="suggest-modal hidden" aria-hidden="true">
+      <div class="suggest-modal-backdrop"></div>
+      <div class="suggest-modal-dialog" role="dialog" aria-modal="true">
+        <button
+          type="button"
+          class="suggest-modal-close"
+          id="suggestModalClose"
+          aria-label="Close suggestion dialog"
+        >
+          ×
+        </button>
+        <iframe
+          id="suggestModalFrame"
+          title="Suggestion form"
+          class="suggest-modal-frame"
+        ></iframe>
+      </div>
+    </div>
+
+
     <!-- Map legend (bottom-left overlay) -->
     <div id="mapLegend" class="map-legend"></div>
   </div>

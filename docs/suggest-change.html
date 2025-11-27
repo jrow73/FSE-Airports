@@ -247,7 +247,14 @@
 
       <div class="buttons">
         <button type="submit" class="btn-primary" id="submit-btn">Submit suggestion</button>
-        <button type="button" class="btn-secondary" onclick="window.close()">Close</button>
+      <button
+        type="button"
+        class="btn-secondary"
+        onclick="window.parent.postMessage({ type: 'fse-close-modal' }, '*')"
+      >
+        Close
+      </button>
+
       </div>
 
       <div id="submit-hint" class="submit-hint"></div>
