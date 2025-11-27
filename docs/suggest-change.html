@@ -312,26 +312,45 @@
           ['Surface type', 'proposed_surface', 'surface']
         ];
 
-        let changesText = '';
+        const userComments = (formData.get('comments') || '').toString().trim();
+
+        const changes = [];
+
+        // Build changes array: one entry per field that has a proposed value
         proposedFields.forEach(([label, propName, currentKey]) => {
-          const val = formData.get(propName);
-          if (val && val.toString().trim() !== '') {
-            changesText += label + ': "' + (currentMap[currentKey] || '') +
-              '" → "' + val.toString().trim() + '"\n';
-          }
+          const raw = formData.get(propName);
+          const proposedVal = raw ? raw.toString().trim() : '';
+          if (!proposedVal) return; // skip unchanged fields
+
+          changes.push({
+            fieldName: label,
+            currentValue: currentMap[currentKey] || '',
+            proposedValue: proposedVal
+          });
         });
 
-        const userComments = formData.get('comments') || '';
-        const combinedComments = (changesText ? changesText + '\n' : '') + userComments;
+        // If there were no field changes but the user left a general comment,
+        // record that as a single "General" row.
+        if (changes.length === 0 && userComments) {
+          changes.push({
+            fieldName: 'General',
+            currentValue: '',
+            proposedValue: ''
+          });
+        }
+
+        // If absolutely nothing was entered, show an error
+        if (changes.length === 0) {
+          statusEl.textContent = 'Please propose at least one change or add a comment.';
+          statusEl.className = 'status error';
+          return;
+        }
 
         const payload = new URLSearchParams();
         payload.append('type', 'change');
-        payload.append('icao', icao);
-        payload.append('fieldName', 'Multiple');
-        payload.append('currentValue', '');
-        payload.append('proposedValue', '');
-        payload.append('comments', combinedComments);
-        payload.append('source', 'FSE Map Viewer');
+        payload.append('icao', icao); // current ICAO
+        payload.append('comments', userComments);
+        payload.append('changes', JSON.stringify(changes));
 
         try {
           await fetch(FORM_ACTION_URL, {
@@ -349,6 +368,7 @@
           statusEl.className = 'status error';
         }
       });
+
     }
 
     init();
