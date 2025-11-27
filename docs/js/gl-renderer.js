@@ -109,6 +109,7 @@
     if (fseIcao) {
       const query = [
         ['icao', fseIcao],
+        ['irlicao', irlIcao || ''], // real-world ICAO (may be empty/null)
         ['name', name],
         ['city', p.city || ''],
         ['state', p.state || ''],

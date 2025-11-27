@@ -85,8 +85,11 @@
 </head>
 <body>
   <div class="container">
-    <h1>Suggest changes to this airport</h1>
-    <p id="airport-summary"></p>
+    <h1>Suggest changes to the FSE airport at this map position.</h1>
+        <p id="airport-summary"></p>
+        <hr />NOTE: If there is no IRL airport at all at this position and the 
+        IRL ICAO has a value assigned, propose the IRL ICAO as "XXXX" 
+        <hr /><br />
 
     <form id="change-form">
       <input type="hidden" name="type" value="change">
@@ -98,15 +101,15 @@
         <div class="grid-header">Current</div>
         <div class="grid-header">Proposed value</div>
 
-        <!-- ICAO -->
-        <div class="label">ICAO</div>
+        <!-- IRL ICAO -->
+        <div class="label">IRL ICAO (real-world)</div>
         <div class="current-value" id="cur-icao"></div>
         <div>
           <input
             type="text"
             name="proposed_icao"
             id="proposed_icao"
-            placeholder="If ICAO is incorrect"
+            placeholder="If IRL ICAO is incorrect"
             maxlength="4"
           >
         </div>
@@ -250,7 +253,11 @@
     function init() {
       const params = getQueryParams();
 
-      const icao     = params.icao || '';
+      // FSE ICAO = permanent key
+      const fseIcao = (params.icao || '').toUpperCase();
+      // IRL ICAO = real-world code (may be null / empty)
+      const irlIcao = (params.irlicao || '').toUpperCase();
+
       const name     = params.name || '';
       const city     = params.city || '';
       const state    = params.state || '';
@@ -259,11 +266,91 @@
       const longest  = params.longestRwy || params.longest || '';
       const surface  = params.surfaceType || '';
 
-      document.getElementById('icao-input').value = icao;
-      document.getElementById('airport-summary').textContent =
-        (icao ? icao + ' — ' : '') + [name, city, state, country].filter(Boolean).join(', ');
+      // Hidden field: what we send to the sheet / Apps Script as the key
+      document.getElementById('icao-input').value = fseIcao;
 
-      document.getElementById('cur-icao').textContent    = icao;
+// Build stylized summary card
+const summaryEl = document.getElementById('airport-summary');
+
+// Determine ICAO display rules
+let icaoLine = '';
+
+if (fseIcao && irlIcao && fseIcao !== irlIcao) {
+  // Different FSE and IRL ICAOs
+  icaoLine = `
+    <div class="icao-line">
+      <span class="icao fse">FSE: ${fseIcao}</span>
+      <span class="icao irl">IRL: ${irlIcao}</span>
+    </div>`;
+} else if (fseIcao && irlIcao && fseIcao === irlIcao) {
+  // Same ICAO
+  icaoLine = `
+    <div class="icao-line">
+      <span class="icao both">ICAO: ${fseIcao}</span>
+    </div>`;
+} else if (fseIcao && !irlIcao) {
+  // No IRL ICAO – closed airport
+  icaoLine = `
+    <div class="icao-line">
+      <span class="icao fse">FSE: ${fseIcao}</span>
+      <span class="icao closed">(Closed)</span>
+    </div>`;
+} else {
+  // No ICAO at all
+  icaoLine = `
+    <div class="icao-line">
+      <span class="icao closed">(No ICAO on file)</span>
+    </div>`;
+}
+
+const locationLine = [city, state, country].filter(Boolean).join(', ');
+
+// Inject card HTML
+summaryEl.innerHTML = `
+  <div class="airport-card">
+    ${icaoLine}
+    <div class="airport-name">${name || ''}</div>
+    <div class="airport-location">${locationLine}</div>
+  </div>
+`;
+
+// Add CSS styles dynamically (safe inside the page)
+const style = document.createElement('style');
+style.textContent = `
+  .airport-card {
+    background: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+  }
+  .icao-line {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .icao {
+    margin-right: 12px;
+  }
+  .icao.fse { color: #1e40af; }     /* blue */
+  .icao.irl { color: #047857; }     /* green */
+  .icao.both { color: #1e3a8a; }    /* navy */
+  .icao.closed { color: #b91c1c; }  /* red */
+  .airport-name {
+    font-weight: bold;
+    font-size: 1.05rem;
+    margin-bottom: 2px;
+  }
+  .airport-location {
+    color: #374151;
+    font-size: 0.9rem;
+  }
+`;
+document.head.appendChild(style);
+
+
+      // In the grid, "current ICAO" = IRL ICAO, not FSE ICAO
+      document.getElementById('cur-icao').textContent    = irlIcao || '(none on file)';
       document.getElementById('cur-name').textContent    = name;
       document.getElementById('cur-city').textContent    = city;
       document.getElementById('cur-state').textContent   = state;
@@ -291,7 +378,7 @@
         const formData = new FormData(form);
 
         const currentMap = {
-          icao: icao,
+          icao: irlIcao || '',
           name: name,
           city: city,
           state: state,
@@ -302,7 +389,7 @@
         };
 
         const proposedFields = [
-          ['ICAO', 'proposed_icao', 'icao'],
+          ['IRL ICAO', 'proposed_icao', 'icao'],
           ['Name', 'proposed_name', 'name'],
           ['City', 'proposed_city', 'city'],
           ['State', 'proposed_state', 'state'],
@@ -311,6 +398,7 @@
           ['Longest runway (ft)', 'proposed_longest', 'longest'],
           ['Surface type', 'proposed_surface', 'surface']
         ];
+
 
         const userComments = (formData.get('comments') || '').toString().trim();
 
@@ -348,7 +436,7 @@
 
         const payload = new URLSearchParams();
         payload.append('type', 'change');
-        payload.append('icao', icao); // current ICAO
+        payload.append('icao', fseIcao); // FSE ICAO Key
         payload.append('comments', userComments);
         payload.append('changes', JSON.stringify(changes));
 
