@@ -144,6 +144,14 @@
         <option>Water</option>
       </select>
 
+      <label for="airportType">Airport type <span style="color:#b91c1c">*</span></label>
+      <select id="airportType" name="airportType" required>
+        <option value="">(select airport type)</option>
+        <option value="Civil">Civil</option>
+        <option value="Water">Water</option>
+        <option value="Military">Military</option>
+      </select>
+
       <label for="lat">Latitude <span style="color:#b91c1c">*</span></label>
       <input type="text" id="lat" name="lat" readonly>
 
@@ -209,17 +217,18 @@
     function validateNewForm() {
       const statusEl = document.getElementById('status');
 
-      const icao     = document.getElementById('icao').value.trim();
-      const name     = document.getElementById('name').value.trim();
-      const city     = document.getElementById('city').value.trim();
-      const state    = document.getElementById('state').value.trim(); // optional
-      const country  = document.getElementById('country').value.trim();
-      const elev     = document.getElementById('elev').value.trim();
-      const longest  = document.getElementById('longestRwy').value.trim();
-      const surface  = document.getElementById('surfaceType').value.trim();
-      const lat      = document.getElementById('lat').value.trim();
-      const lon      = document.getElementById('lon').value.trim();
-      const comments = document.getElementById('comments').value.trim();
+      const icao        = document.getElementById('icao').value.trim();
+      const name        = document.getElementById('name').value.trim();
+      const city        = document.getElementById('city').value.trim();
+      const state       = document.getElementById('state').value.trim(); // optional
+      const country     = document.getElementById('country').value.trim();
+      const elev        = document.getElementById('elev').value.trim();
+      const longest     = document.getElementById('longestRwy').value.trim();
+      const surface     = document.getElementById('surfaceType').value.trim();
+      const airportType = document.getElementById('airportType').value.trim();
+      const lat         = document.getElementById('lat').value.trim();
+      const lon         = document.getElementById('lon').value.trim();
+      const comments    = document.getElementById('comments').value.trim();
 
         // ICAO: required, 3 or 4 alphanumeric characters
         if (!icao) {
@@ -261,6 +270,11 @@
       }
       if (!surface) {
         statusEl.textContent = 'Surface type is required.';
+        statusEl.className = 'status error';
+        return false;
+      }
+      if (!airportType) {
+        statusEl.textContent = 'Airport type is required.';
         statusEl.className = 'status error';
         return false;
       }
@@ -324,7 +338,7 @@
 
         payload.append('type', 'new');
         // Only "state" is optional. Everything else is required, but we still guard with "|| ''" for safety.
-        ['icao','name','city','state','country','elev','longestRwy','surfaceType','lat','lon','comments'].forEach((key) => {
+        ['icao','name','city','state','country','elev','longestRwy','surfaceType','airportType','lat','lon','comments'].forEach((key) => {
           payload.append(key, formData.get(key) || '');
         });
 

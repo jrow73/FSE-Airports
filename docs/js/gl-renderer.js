@@ -117,6 +117,7 @@
         ['elev', Number.isFinite(p.elev) ? String(p.elev) : ''],
         ['longestRwy', p.longestRwy != null ? String(p.longestRwy) : ''],
         ['surfaceType', p.surfaceType || ''],
+        ['type', p.type || ''],
         ['lat', String(lat)],
         ['lon', String(lng)]
       ]

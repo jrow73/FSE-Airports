@@ -180,6 +180,19 @@
             <option>Water</option>
           </select>
         </div>
+
+
+        <!-- Airport type -->
+        <div class="label">Airport type</div>
+        <div class="current-value" id="cur-airportType"></div>
+        <div>
+          <select name="proposed_airportType" id="proposed_airportType">
+            <option value="">(no change)</option>
+            <option value="Civil">Civil</option>
+            <option value="Water">Water</option>
+            <option value="Military">Military</option>
+          </select>
+        </div>
       </div>
 
       <div style="margin-top:1rem;">
@@ -269,6 +282,24 @@
       const elev     = params.elev || '';
       const longest  = params.longestRwy || params.longest || '';
       const surface  = params.surfaceType || '';
+
+      // Airport type: try explicit airportType, then raw "type" prop; normalize to title-case
+      const rawType = params.airportType || params.type || '';
+      let airportType = '';
+      switch (rawType.toLowerCase()) {
+        case 'civil':
+          airportType = 'Civil';
+          break;
+        case 'water':
+          airportType = 'Water';
+          break;
+        case 'military':
+          airportType = 'Military';
+          break;
+        default:
+          airportType = rawType || '';
+      }
+
 
       // Hidden field: what we send to the sheet / Apps Script as the key
       document.getElementById('icao-input').value = fseIcao;
@@ -376,6 +407,8 @@ document.head.appendChild(style);
       document.getElementById('cur-elev').textContent    = elev;
       document.getElementById('cur-longest').textContent = longest;
       document.getElementById('cur-surface').textContent = surface;
+      document.getElementById('cur-airportType').textContent = airportType || '(not set)';
+
 
       initNumericFilters();
       initCommentCounter();
@@ -405,7 +438,8 @@ document.head.appendChild(style);
           country: country,
           elev: elev,
           longest: longest,
-          surface: surface
+          surface: surface,
+          airportType: airportType
         };
 
         const proposedFields = [
@@ -416,8 +450,10 @@ document.head.appendChild(style);
           ['Country', 'proposed_country', 'country'],
           ['Elevation (ft)', 'proposed_elev', 'elev'],
           ['Longest runway (ft)', 'proposed_longest', 'longest'],
-          ['Surface type', 'proposed_surface', 'surface']
+          ['Surface type', 'proposed_surface', 'surface'],
+          ['Airport Type', 'proposed_airportType', 'airportType']
         ];
+
 
 
         const userComments = (formData.get('comments') || '').toString().trim();
