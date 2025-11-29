@@ -638,6 +638,29 @@ button.ghost {
   font-size: 0.9rem;
 }
 
+/* Valid-field indicator inside form controls */
+
+.suggest-form-control--with-status {
+  position: relative;
+}
+
+.field-valid-indicator {
+  position: absolute;
+  right: 0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.85rem;
+  color: #16a34a; /* green */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.12s ease-out;
+}
+
+.field-valid-indicator.visible {
+  opacity: 1;
+}
+
+
 /* Stack on small screens */
 @media (max-width: 720px) {
   .suggest-form-grid {

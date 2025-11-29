@@ -11,6 +11,55 @@
     return document.getElementById(id);
   }
 
+  let allowedCountries = null;
+  let allowedStates = null;
+
+  function initCountryStateOptionsFromSearch() {
+    if (!global.Search) return;
+
+    const countryListEl = $('new-country-list');
+    const stateListEl = $('new-state-list');
+
+    // Countries (required)
+    if (countryListEl && typeof global.Search.countries === 'function') {
+      const countries = global.Search.countries() || [];
+      // normalize to uppercase for comparison
+      allowedCountries = countries
+        .map((c) => toProperCase(String(c).trim()))
+        .filter(Boolean);
+      countryListEl.innerHTML = '';
+      allowedCountries.forEach((c) => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        countryListEl.appendChild(opt);
+      });
+    }
+
+    // States (optional)
+    if (stateListEl && typeof global.Search.states === 'function') {
+      const states = global.Search.states() || [];
+      allowedStates = states
+        .map((s) => toProperCase(String(s).trim()))
+        .filter(Boolean);
+      stateListEl.innerHTML = '';
+      allowedStates.forEach((s) => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        stateListEl.appendChild(opt);
+      });
+    }
+  }
+
+    function toProperCase(str) {
+    if (!str) return '';
+    return str
+        .toLowerCase()
+        .split(/\s+/)
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+
+
   function showModal(modalId) {
     const el = $(modalId);
     if (!el) return;
@@ -473,6 +522,7 @@
     const icao = ($('new-icao')?.value || '').trim();
     const name = ($('new-name')?.value || '').trim();
     const city = ($('new-city')?.value || '').trim();
+    const state = ($('new-state')?.value || '').trim();
     const country = ($('new-country')?.value || '').trim();
     const elev = ($('new-elev')?.value || '').trim();
     const longest = ($('new-longestRwy')?.value || '').trim();
@@ -482,6 +532,7 @@
     const lon = ($('new-lon')?.value || '').trim();
     const comments = ($('new-comments')?.value || '').trim();
 
+    // Required presence checks
     if (!icao) {
       statusEl.textContent = 'ICAO is required.';
       statusEl.className = 'suggest-status error';
@@ -492,6 +543,19 @@
         'ICAO must be 3 or 4 alphanumeric characters (A–Z, 0–9).';
       statusEl.className = 'suggest-status error';
       return false;
+    }
+
+    // ICAO must not already exist in the map data
+    if (global.Search && typeof global.Search.byIcao === 'function') {
+      const existing = global.Search.byIcao(icao.toUpperCase());
+      if (existing) {
+        statusEl.textContent =
+          'That ICAO already exists in the current map data. ' +
+          'If you are trying to correct that airport, please use the ' +
+          '"Suggest changes to this airport" option instead of creating a new one.';
+        statusEl.className = 'suggest-status error';
+        return false;
+      }
     }
 
     if (!name) {
@@ -542,6 +606,7 @@
       return false;
     }
 
+    // Numeric format checks
     if (!/^[0-9]{1,5}$/.test(elev)) {
       statusEl.textContent =
         'Elevation must be numeric only (up to 5 digits).';
@@ -553,6 +618,34 @@
         'Longest runway must be numeric only (up to 5 digits).';
       statusEl.className = 'suggest-status error';
       return false;
+    }
+
+    // Country must match known list, if we have one
+    if (allowedCountries && allowedCountries.length) {
+      const countryNorm = country.trim();
+      const match = allowedCountries.some(
+        (c) => c.toLowerCase() === countryNorm.toLowerCase()
+      );
+      if (!match) {
+        statusEl.textContent =
+          'Country must match one of the existing countries in the map list (use the suggestions as you type).';
+        statusEl.className = 'suggest-status error';
+        return false;
+      }
+    }
+
+    // State is optional, but if present must match known list
+    if (state && allowedStates && allowedStates.length) {
+      const stateNorm = state.trim();
+      const match = allowedStates.some(
+        (s) => s.toLowerCase() === stateNorm.toLowerCase()
+      );
+      if (!match) {
+        statusEl.textContent =
+          'State / province must match one of the existing entries in the map list (or leave it blank).';
+        statusEl.className = 'suggest-status error';
+        return false;
+      }
     }
 
     return true;
@@ -586,74 +679,207 @@
     }
   }
 
-  function initNewForm() {
-    const form = $('new-airport-form');
-    if (!form) return;
+function initNewForm() {
+  const form = $('new-airport-form');
+  if (!form) return;
 
-    initNumericFiltersNew();
-    initNewCommentCounter();
+  initNumericFiltersNew();
+  initNewCommentCounter();
 
-    const statusEl = $('new-status');
+  const statusEl = $('new-status');
 
-    form.addEventListener('submit', async (evt) => {
-      evt.preventDefault();
-      if (!statusEl) return;
+  // Live ICAO duplicate check
+  const icaoInput = $('new-icao');
+  const submitBtn = form.querySelector('button[type="submit"]');
 
+  if (icaoInput && statusEl && submitBtn) {
+    icaoInput.addEventListener('input', () => {
+      const raw = icaoInput.value || '';
+      const val = raw.trim().toUpperCase();
+      icaoInput.value = val; // force uppercase as they type
+
+      // Clear any previous duplicate message from this live check
       statusEl.textContent = '';
       statusEl.className = 'suggest-status';
 
-      if (!validateNewForm()) {
+      // Empty → nothing to check yet
+      if (!val) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('suggest-btn-disabled');
         return;
       }
 
-      statusEl.textContent = 'Sending...';
-
-      const formData = new FormData(form);
-      const payload = new URLSearchParams();
-
-      payload.append('type', 'new');
-      [
-        'icao',
-        'name',
-        'city',
-        'state',
-        'country',
-        'elev',
-        'longestRwy',
-        'surfaceType',
-        'airportType',
-        'lat',
-        'lon',
-        'comments',
-      ].forEach((key) => {
-        payload.append(key, formData.get(key) || '');
-      });
-
-      const latStr = formData.get('lat') || '';
-      const lonStr = formData.get('lon') || '';
-
-      try {
-        await fetch(FORM_ACTION_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          body: payload,
-        });
-
-        statusEl.textContent =
-          'Thank you! Your new airport suggestion has been recorded.';
-        statusEl.className = 'suggest-status ok';
-        form.reset();
-        // Restore lat/lon after reset
-        $('new-lat').value = latStr || '';
-        $('new-lon').value = lonStr || '';
-      } catch (err) {
-        console.error(err);
-        statusEl.textContent =
-          'Sorry, something went wrong submitting your suggestion.';
-        statusEl.className = 'suggest-status error';
+      // If it's not a plausible ICAO yet, don't do the duplicate check.
+      // We'll still catch bad format in validateNewForm().
+      if (!/^[A-Z0-9]{3,4}$/.test(val)) {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('suggest-btn-disabled');
+        return;
       }
+
+      // Check for duplicates in current map data
+      if (window.Search && typeof window.Search.byIcao === 'function') {
+        const exists = window.Search.byIcao(val);
+        if (exists) {
+          statusEl.textContent =
+            'This ICAO already exists in the map. ' +
+            'Use “Suggest changes to this airport” instead of creating a new one.';
+          statusEl.className = 'suggest-status error';
+
+          submitBtn.disabled = true;
+          submitBtn.classList.add('suggest-btn-disabled');
+          return;
+        }
+      }
+
+      // No duplicate → allow submit
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('suggest-btn-disabled');
     });
   }
+
+    wireAutoCompleteAndIndicator(
+    'new-country',
+    'new-country-valid',
+    () => allowedCountries,
+    false // not optional
+  );
+
+  wireAutoCompleteAndIndicator(
+    'new-state',
+    'new-state-valid',
+    () => allowedStates,
+    true // optional
+  );
+
+  // Submit handler 
+  form.addEventListener('submit', async (evt) => {
+    evt.preventDefault();
+    if (!statusEl) return;
+
+    statusEl.textContent = '';
+    statusEl.className = 'suggest-status';
+
+    if (!validateNewForm()) {
+      return;
+    }
+
+    statusEl.textContent = 'Sending...';
+
+    const formData = new FormData(form);
+    const payload = new URLSearchParams();
+
+    payload.append('type', 'new');
+    [
+      'icao',
+      'name',
+      'city',
+      'state',
+      'country',
+      'elev',
+      'longestRwy',
+      'surfaceType',
+      'airportType',
+      'lat',
+      'lon',
+      'comments',
+    ].forEach((key) => {
+      payload.append(key, formData.get(key) || '');
+    });
+
+    const latStr = formData.get('lat') || '';
+    const lonStr = formData.get('lon') || '';
+
+    try {
+      await fetch(FORM_ACTION_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        body: payload,
+      });
+
+      statusEl.textContent =
+        'Thank you! Your new airport suggestion has been recorded.';
+      statusEl.className = 'suggest-status ok';
+      form.reset();
+      // Restore lat/lon after reset
+      $('new-lat').value = latStr || '';
+      $('new-lon').value = lonStr || '';
+    } catch (err) {
+      console.error(err);
+      statusEl.textContent =
+        'Sorry, something went wrong submitting your suggestion.';
+      statusEl.className = 'suggest-status error';
+    }
+  });
+}
+
+function wireAutoCompleteAndIndicator(inputId, indicatorId, getAllowedList, isOptional) {
+  const input = $(inputId);
+  const indicator = $(indicatorId);
+
+  if (!input) return;
+
+  function setIndicator(valid) {
+    if (!indicator) return;
+    indicator.classList.toggle('visible', valid);
+  }
+
+  input.addEventListener('input', () => {
+    const raw = input.value || '';
+    const val = raw.trim();
+    if (!val) {
+      // Empty: always "valid" for optional, not valid for required.
+      setIndicator(isOptional);
+      return;
+    }
+
+    const allowed = getAllowedList() || [];
+    const lower = val.toLowerCase();
+
+    const exact = allowed.some(
+      (v) => v.toLowerCase() === lower
+    );
+    setIndicator(exact);
+  });
+
+  input.addEventListener('blur', () => {
+    const raw = input.value || '';
+    const val = raw.trim();
+    if (!val) {
+      setIndicator(isOptional);
+      return;
+    }
+
+    const allowed = getAllowedList() || [];
+    const lower = val.toLowerCase();
+
+    // First: check for exact match
+    const exactMatch = allowed.find(
+      (v) => v.toLowerCase() === lower
+    );
+    if (exactMatch) {
+      input.value = exactMatch; // normalize casing
+      setIndicator(true);
+      return;
+    }
+
+    // If not exact, see if it's a unique prefix
+    const prefixMatches = allowed.filter((v) =>
+      v.toLowerCase().startsWith(lower)
+    );
+
+    if (prefixMatches.length === 1) {
+      // Unique prefix → autocomplete to full proper name
+      input.value = prefixMatches[0];
+      setIndicator(true);
+      return;
+    }
+
+    // No unique or exact match
+    setIndicator(false);
+  });
+}
+
 
   // ---------------------- PUBLIC API + EVENT DELEGATION ------------------- //
 
@@ -678,6 +904,9 @@
     openNewAirportModal(latStr, lonStr) {
       populateNewForm(latStr, lonStr);
       showModal('newModal');
+    },
+    refreshCountryStateOptions() {
+      initCountryStateOptionsFromSearch();
     },
   };
 

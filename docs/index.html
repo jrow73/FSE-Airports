@@ -502,27 +502,45 @@
     <div class="suggest-form-label">
       <label for="new-state">State / Province / Territory</label>
     </div>
-    <div class="suggest-form-control">
+    <div class="suggest-form-control suggest-form-control--with-status">
       <input
         type="text"
         id="new-state"
         name="state"
         placeholder="(if applicable) [USA, CAN, AUS only]"
+        list="new-state-list"
       />
+      <span
+        id="new-state-valid"
+        class="field-valid-indicator"
+        aria-hidden="true"
+      >
+        ✓
+      </span>
     </div>
+
 
     <div class="suggest-form-label">
       <label for="new-country">Country <span class="suggest-required">*</span></label>
     </div>
-    <div class="suggest-form-control">
+    <div class="suggest-form-control suggest-form-control--with-status">
       <input
         type="text"
         id="new-country"
         name="country"
         placeholder="Country"
         required
+        list="new-country-list"
       />
+      <span
+        id="new-country-valid"
+        class="field-valid-indicator"
+        aria-hidden="true"
+      >
+        ✓
+      </span>
     </div>
+
 
     <div class="suggest-form-label">
       <label for="new-elev">Elevation (ft) <span class="suggest-required">*</span></label>
@@ -625,6 +643,9 @@
       </div>
     </div>
   </div>
+
+  <datalist id="new-state-list"></datalist>
+  <datalist id="new-country-list"></datalist>
 
   <div class="suggest-buttons">
     <button type="submit" class="suggest-btn-primary">

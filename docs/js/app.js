@@ -110,6 +110,10 @@
       Search.build(allFeatures);
       queryUI.setAllFeatures(allFeatures);
       queryUI.populateSelects();
+      if (window.SuggestionForms &&
+          typeof window.SuggestionForms.refreshCountryStateOptions === 'function') {
+        window.SuggestionForms.refreshCountryStateOptions();
+      }
       queryUI.render();
       GlRenderer.fitTo(allFeatures);
     } catch (err) {
