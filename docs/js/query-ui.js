@@ -25,24 +25,25 @@
     function buildCoordPopupHtml(lat, lon) {
       const latStr = Number.isFinite(lat) ? lat.toFixed(6) : String(lat);
       const lonStr = Number.isFinite(lon) ? lon.toFixed(6) : String(lon);
-      const href = `suggest-new.html?lat=${encodeURIComponent(latStr)}&lon=${encodeURIComponent(lonStr)}`;
 
       return `
       <div class="coord-popup">
         <div class="coord-popup-title">New Location</div>
         <div class="coord-popup-body">
-          <a
-            href="${href}"
-            target="_blank"
-            rel="noopener"
+          <button
+            type="button"
+            class="menu-btn js-open-new-airport"
+            data-lat="${latStr}"
+            data-lon="${lonStr}"
             title="Suggest new airport at this location"
           >
-            Suggest new airport <br />at these coordinates
-          </a>
+            Suggest new airport at these coordinates
+          </button>
         </div>
       </div>
       `;
     }
+
 
     function setAllFeatures(features) {
       allFeatures = Array.isArray(features) ? features : [];

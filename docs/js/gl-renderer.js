@@ -56,7 +56,7 @@
     };
   }
 
-  // --- click handler (popup) -------------------------------------------------
+   // --- click handler (popup) -------------------------------------------------
   function handleClick(e, feature, xy) {
     if (!feature || feature.type !== 'Feature') return;
 
@@ -75,72 +75,72 @@
     let icaoLine = fseIcao || '—';
 
     if (hasReal) {
-      // There *is* a real airport; only decorate if mismatched
       if (!icaoCorrect && irlIcao && irlIcao !== fseIcao) {
         icaoLine += ` <span class="icao-irl">(IRL=${irlIcao})</span>`;
       }
-      // If correct or missing IRL ICAO, just show FSE ICAO
     } else {
-      // No real airport at this location
       icaoLine += ` <span class="icao-closed" title="IRL airport is closed">⨂</span>`;
     }
 
-    // --- Local services: based on localfuel / localmx --------------------
     const hasFuel = String(p.localfuel || '').toLowerCase() === 'yes';
-    const hasMx   = String(p.localmx || '').toLowerCase() === 'yes';
+    const hasMx = String(p.localmx || '').toLowerCase() === 'yes';
 
     function formatLocalServices() {
       if (!hasFuel && !hasMx) return 'None';
-      if (hasFuel && !hasMx)  return 'Fuel';
-      if (!hasFuel && hasMx)  return 'Maintenance';
+      if (hasFuel && !hasMx) return 'Fuel';
+      if (!hasFuel && hasMx) return 'Maintenance';
       return 'Fuel, Maintenance';
     }
 
-
     const servicesText = formatLocalServices();
-
-    // --- Other fields -----------------------------------------------------
     const elevText = Number.isFinite(p.elev) ? `${p.elev} ft` : '—';
     const longestText = p.longestRwy
       ? `${Number(p.longestRwy).toLocaleString()} ft`
       : '—';
-    const surfaceText = (p.surfaceType ?? '—');
+    const surfaceText = p.surfaceType ?? '—';
 
     const linkHtml = fseIcao
-      ? `<a href="https://server.fseconomy.net/airport.jsp?icao=${encodeURIComponent(fseIcao)}"
+      ? `<a href="https://server.fseconomy.net/airport.jsp?icao=${encodeURIComponent(
+          fseIcao
+        )}"
            target="fse_tab"
            title="Open in FSEconomy (new tab)"
            aria-label="Open in FSEconomy">&#128279;</a>`
       : '';
 
-    let suggestData = '';
-    if (fseIcao) {
-      const query = [
-        ['icao', fseIcao],
-        ['irlicao', irlIcao || ''], // real-world ICAO (may be empty/null)
-        ['name', name],
-        ['city', p.city || ''],
-        ['state', p.state || ''],
-        ['country', p.country || ''],
-        ['elev', Number.isFinite(p.elev) ? String(p.elev) : ''],
-        ['longestRwy', p.longestRwy != null ? String(p.longestRwy) : ''],
-        ['surfaceType', p.surfaceType || ''],
-        ['type', p.type || ''],
-        ['lat', String(lat)],
-        ['lon', String(lng)]
-      ]
-        .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`)
-        .join('&');
+    // Register this airport with SuggestionForms (if available) so we can
+    // open the modal later without stuffing everything into data-attrs.
+    let suggestDataHtml = '';
+    if (fseIcao && global.SuggestionForms && typeof global.SuggestionForms.registerChangeAirport === 'function') {
+      const key = global.SuggestionForms.registerChangeAirport({
+        fseIcao,
+        irlIcao,
+        name,
+        city: p.city || '',
+        state: p.state || '',
+        country: p.country || '',
+        elev: Number.isFinite(p.elev) ? String(p.elev) : '',
+        longest:
+          p.longestRwy != null && !Number.isNaN(Number(p.longestRwy))
+            ? String(p.longestRwy)
+            : '',
+        surface: p.surfaceType || '',
+        airportType: p.type || '',
+        lat,
+        lon: lng,
+      });
 
-      const href = `suggest-change.html?${query}`;
-
-      suggestData = `<a href="${href}"
-           target="_blank"
-           rel="noopener"
-           title="Suggest changes to this airport"
-           aria-label="Suggest changes">Suggest changes to this airport</a>`;
+      if (key) {
+        suggestDataHtml = `
+          <button
+            type="button"
+            class="menu-btn js-open-suggest-change"
+            data-suggest-key="${key}"
+          >
+            Suggest changes to this airport
+          </button>`;
+      }
     }
-
 
     const html = `
       <div class="ap-popup">
@@ -156,28 +156,37 @@
           </div>
           <div class="ap-row">
             <div class="ap-label">Longest Runway</div>
-            <div class="ap-value">${longestText}${surfaceText !== '—' ? ` of ${surfaceText}` : ''}</div>
+            <div class="ap-value">
+              ${longestText}${
+      surfaceText !== '—' ? ` of ${surfaceText}` : ''
+    }
+            </div>
           </div>
           <div class="ap-row">
             <div class="ap-label">Local Services</div>
             <div class="ap-value">${servicesText}</div>
           </div>
           <div class="ap-row">
-            <div class="ap-label">Coordintes</div>
+            <div class="ap-label">Coordinates</div>
             <div class="ap-value">${lat} ${lng}</div>
           </div>
+          ${
+            suggestDataHtml
+              ? `
           <div class="ap-row">
-            <div class="menu-btn"><center>${suggestData}</center></div>
-          </div>
+            <div class="ap-value">
+              ${suggestDataHtml}
+            </div>
+          </div>`
+              : ''
+          }
         </div>
       </div>
     `;
 
-    L.popup()
-      .setLatLng([lat, lng])
-      .setContent(html)
-      .openOn(GlRenderer.map);
+    L.popup().setLatLng([lat, lng]).setContent(html).openOn(GlRenderer.map);
   }
+
 
   // Build one GL points layer for a subset of features + style
   // style = { sizeScale: number, colorMode: 'type' | 'white' }

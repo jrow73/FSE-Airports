@@ -32,10 +32,8 @@
         <button id="filtersBtn" class="menu-btn" aria-expanded="false">Filters ▾</button>
         <button id="distanceBtn" class="menu-btn" aria-expanded="false">Distance ▾</button>
       </div>
-
     </header>
 
-   
     <!-- Slide-down filters panel -->
     <section id="filtersPanel" class="panel" aria-hidden="true">
       <div class="panel-inner">
@@ -218,8 +216,6 @@
       </div>
     </section>
 
-
-
     <!-- Distance panel -->
     <section id="distancePanel" class="panel" aria-hidden="true">
       <div class="panel-inner">
@@ -264,6 +260,385 @@
 
     <!-- Map legend (bottom-left overlay) -->
     <div id="mapLegend" class="map-legend"></div>
+
+    <!-- ===================== SUGGESTION MODALS ====================== -->
+
+    <!-- Change existing airport modal -->
+    <div id="changeModal" class="suggest-modal hidden" aria-hidden="true">
+      <div class="suggest-modal-backdrop" data-modal-close></div>
+      <div class="suggest-modal-dialog">
+        <button type="button" class="suggest-modal-close" data-modal-close>&times;</button>
+
+        <h2 class="suggest-modal-title">Suggest changes to the FSE airport at this map position</h2>
+        <p id="change-airport-summary"></p>
+        <hr />
+        <p class="suggest-note">
+          NOTE: If there is no IRL airport at all at this map position
+          <br />
+          <strong>BUT</strong> the IRL ICAO in the table below has a value assigned,
+          <br />
+          propose the IRL ICAO as “XXXX” to indicate that the FSE airport is closed.
+        </p>
+        <hr /><br />
+
+        <form id="change-form">
+          <input type="hidden" name="type" value="change" />
+          <input type="hidden" id="icao-input" name="icao" />
+          <input type="hidden" name="source" value="FSE Map Viewer" />
+
+          <div class="suggest-grid">
+            <div class="suggest-grid-header">Field Name</div>
+            <div class="suggest-grid-header">Current Value</div>
+            <div class="suggest-grid-header">Proposed Value</div>
+
+            <!-- IRL ICAO -->
+            <div class="suggest-label">IRL ICAO (real-world)</div>
+            <div class="suggest-current-value" id="cur-icao"></div>
+            <div>
+              <input
+                type="text"
+                name="proposed_icao"
+                id="proposed_icao"
+                placeholder="What is the correct IRL ICAO at this map position?"
+                maxlength="4"
+              />
+            </div>
+
+            <!-- Name -->
+            <div class="suggest-label">Name</div>
+            <div class="suggest-current-value" id="cur-name"></div>
+            <div>
+              <input
+                type="text"
+                name="proposed_name"
+                id="proposed_name"
+                placeholder="What is the correct name"
+              />
+            </div>
+
+            <!-- City -->
+            <div class="suggest-label">City</div>
+            <div class="suggest-current-value" id="cur-city"></div>
+            <div>
+              <input
+                type="text"
+                name="proposed_city"
+                id="proposed_city"
+                placeholder="What is the correct city"
+              />
+            </div>
+
+            <!-- State -->
+            <div class="suggest-label">State</div>
+            <div class="suggest-current-value" id="cur-state"></div>
+            <div>
+              <input
+                type="text"
+                name="proposed_state"
+                id="proposed_state"
+                placeholder="What is the correct state/province"
+              />
+            </div>
+
+            <!-- Country -->
+            <div class="suggest-label">Country</div>
+            <div class="suggest-current-value" id="cur-country"></div>
+            <div>
+              <input
+                type="text"
+                name="proposed_country"
+                id="proposed_country"
+                placeholder="What is the correct country"
+              />
+            </div>
+
+            <!-- Elevation -->
+            <div class="suggest-label">Elevation (ft)</div>
+            <div class="suggest-current-value" id="cur-elev"></div>
+            <div>
+              <input
+                type="text"
+                name="proposed_elev"
+                id="proposed_elev"
+                placeholder="What is the correct elevation"
+                maxlength="5"
+              />
+            </div>
+
+            <!-- Longest runway -->
+            <div class="suggest-label">Longest runway (ft)</div>
+            <div class="suggest-current-value" id="cur-longest"></div>
+            <div>
+              <input
+                type="text"
+                name="proposed_longest"
+                id="proposed_longest"
+                placeholder="What is the correct length"
+                maxlength="5"
+              />
+            </div>
+
+            <!-- Surface type -->
+            <div class="suggest-label">Surface type</div>
+            <div class="suggest-current-value" id="cur-surface"></div>
+            <div>
+              <select name="proposed_surface" id="proposed_surface">
+                <option value="">(no change)</option>
+                <option>Asphalt</option>
+                <option>Concrete</option>
+                <option>Coral</option>
+                <option>Dirt</option>
+                <option>Grass</option>
+                <option>Gravel</option>
+                <option>Helipad</option>
+                <option>Oil Treated</option>
+                <option>Snow</option>
+                <option>Steel Mats</option>
+                <option>Water</option>
+              </select>
+            </div>
+
+            <!-- Airport type -->
+            <div class="suggest-label">Airport type</div>
+            <div class="suggest-current-value" id="cur-airportType"></div>
+            <div>
+              <select name="proposed_airportType" id="proposed_airportType">
+                <option value="">(no change)</option>
+                <option value="Civil">Civil</option>
+                <option value="Water">Water</option>
+                <option value="Military">Military</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top:1rem;">
+            <label for="change-comments"><strong>Additional comments</strong></label>
+            <textarea
+              id="change-comments"
+              name="comments"
+              placeholder="Anything else we should know? Is there a source website we can use to verify this suggestion?"
+              maxlength="255"
+            ></textarea>
+            <div
+              id="change-comment-counter"
+              style="font-size:0.75rem; color:#6b7280; margin-top:2px;"
+            >
+              0 / 255
+            </div>
+          </div>
+
+          <div class="suggest-buttons">
+            <button type="submit" class="suggest-btn-primary" id="change-submit-btn">
+              Submit suggestion
+            </button>
+            <button type="button" class="suggest-btn-secondary" data-modal-close>
+              Close
+            </button>
+          </div>
+
+          <div id="change-submit-hint" class="suggest-submit-hint"></div>
+          <div id="change-status" class="suggest-status"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- New airport modal -->
+    <div id="newModal" class="suggest-modal hidden" aria-hidden="true">
+      <div class="suggest-modal-backdrop" data-modal-close></div>
+      <div class="suggest-modal-dialog">
+        <button type="button" class="suggest-modal-close" data-modal-close>&times;</button>
+
+        <h2 class="suggest-modal-title">Suggest a new airport</h2>
+        <p class="suggest-note">
+          The latitude/longitude below comes from the pin you placed on the map and cannot be changed.
+          If the pin was not exact, please go back to the map and start from a new pin in the correct
+          location.
+        </p>
+
+<form id="new-airport-form">
+  <input type="hidden" name="type" value="new" />
+
+  <div class="suggest-form-grid">
+    <div class="suggest-form-label">
+      <label for="new-icao">ICAO <span class="suggest-required">*</span></label>
+    </div>
+    <div class="suggest-form-control">
+      <input
+        type="text"
+        id="new-icao"
+        name="icao"
+        placeholder="e.g. KABC"
+        maxlength="4"
+        required
+      />
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-name">Airport name <span class="suggest-required">*</span></label>
+    </div>
+    <div class="suggest-form-control">
+      <input
+        type="text"
+        id="new-name"
+        name="name"
+        placeholder="Airport name"
+        required
+      />
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-city">City <span class="suggest-required">*</span></label>
+    </div>
+    <div class="suggest-form-control">
+      <input
+        type="text"
+        id="new-city"
+        name="city"
+        placeholder="City"
+        required
+      />
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-state">State / Province / Territory</label>
+    </div>
+    <div class="suggest-form-control">
+      <input
+        type="text"
+        id="new-state"
+        name="state"
+        placeholder="(if applicable) [USA, CAN, AUS only]"
+      />
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-country">Country <span class="suggest-required">*</span></label>
+    </div>
+    <div class="suggest-form-control">
+      <input
+        type="text"
+        id="new-country"
+        name="country"
+        placeholder="Country"
+        required
+      />
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-elev">Elevation (ft) <span class="suggest-required">*</span></label>
+    </div>
+    <div class="suggest-form-control">
+      <input
+        type="text"
+        id="new-elev"
+        name="elev"
+        placeholder="e.g. 1234, numbers only"
+        maxlength="5"
+        required
+      />
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-longestRwy">
+        Longest runway (ft) <span class="suggest-required">*</span>
+      </label>
+    </div>
+    <div class="suggest-form-control">
+      <input
+        type="text"
+        id="new-longestRwy"
+        name="longestRwy"
+        placeholder="e.g. 4500, numbers only"
+        maxlength="5"
+        required
+      />
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-surfaceType">
+        Surface type <span class="suggest-required">*</span>
+      </label>
+    </div>
+    <div class="suggest-form-control">
+      <select id="new-surfaceType" name="surfaceType" required>
+        <option value="">(select surface type)</option>
+        <option>Asphalt</option>
+        <option>Concrete</option>
+        <option>Coral</option>
+        <option>Dirt</option>
+        <option>Grass</option>
+        <option>Gravel</option>
+        <option>Helipad</option>
+        <option>Oil Treated</option>
+        <option>Snow</option>
+        <option>Steel Mats</option>
+        <option>Water</option>
+      </select>
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-airportType">
+        Airport type <span class="suggest-required">*</span>
+      </label>
+    </div>
+    <div class="suggest-form-control">
+      <select id="new-airportType" name="airportType" required>
+        <option value="">(select airport type)</option>
+        <option value="Civil">Civil</option>
+        <option value="Water">Water</option>
+        <option value="Military">Military</option>
+      </select>
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-lat">Latitude <span class="suggest-required">*</span></label>
+    </div>
+    <div class="suggest-form-control">
+      <input type="text" id="new-lat" name="lat" readonly />
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-lon">Longitude <span class="suggest-required">*</span></label>
+    </div>
+    <div class="suggest-form-control">
+      <input type="text" id="new-lon" name="lon" readonly />
+    </div>
+
+    <div class="suggest-form-label">
+      <label for="new-comments">
+        Additional comments <span class="suggest-required">*</span>
+      </label>
+    </div>
+    <div class="suggest-form-control">
+      <textarea
+        id="new-comments"
+        name="comments"
+        placeholder="Any other details (runway type/length, notes, etc.)"
+        maxlength="255"
+        required
+      ></textarea>
+      <div
+        id="new-comment-counter"
+        style="font-size:0.75rem; color:#6b7280; margin-top:2px;"
+      >
+        0 / 255
+      </div>
+    </div>
+  </div>
+
+  <div class="suggest-buttons">
+    <button type="submit" class="suggest-btn-primary">
+      Submit new airport
+    </button>
+    <button type="button" class="suggest-btn-secondary" data-modal-close>
+      Close
+    </button>
+  </div>
+
+  <div id="new-status" class="suggest-status"></div>
+</form>
+      </div>
+    </div>
   </div>
 
   <!-- Leaflet core -->
@@ -279,6 +654,10 @@
   <script src="./js/geo-utils.js"></script>
   <script src="./js/query-ui.js"></script>
   <script src="./js/distance-tool.js"></script>
+
+  <!-- NEW: suggestion modal logic -->
+  <script src="./js/suggestion-forms.js"></script>
+
   <script src="./js/app.js"></script>
 </body>
 </html>
