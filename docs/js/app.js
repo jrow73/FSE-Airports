@@ -94,7 +94,7 @@
     try {
       setLoading(true);
       const res = await fetch('./data/airports.geojson', {
-        cache: 'force-cache'
+        cache: 'no-cache'
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const gj = await res.json();
